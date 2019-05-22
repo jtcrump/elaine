@@ -1,0 +1,131 @@
+{
+    "name": "drupalcommerce/project-base",
+    "description": "Commerce 2.x project template",
+    "type": "project",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "",
+            "role": ""
+        }
+    ],
+    "repositories": {
+        "drupal": {
+            "type": "composer",
+            "url": "https://packages.drupal.org/8"
+        },
+        "commerce_base": {
+            "type": "vcs",
+            "url": "https://github.com/drupalcommerce/commerce_base"
+        },
+        "asset-packagist": {
+            "type": "composer",
+            "url": "https://asset-packagist.org"
+        }
+    },
+    "config": {
+      "bin-dir": "bin",
+      "sort-packages": true
+    },
+    "require": {
+        "ext-curl": "*",
+        "composer/installers": "^1.2",
+        "cweagans/composer-patches": "^1.6.5",
+        "drupal-composer/drupal-scaffold": "^2.5",
+        "drupal/addtoany": "^1.12",
+        "drupal/admin_toolbar": "~1.0",
+        "drupal/backup_migrate": "^4.0",
+        "drupal/colorbox": "^1.4",
+        "drupal/commerce": "~2.0",
+        "drupal/commerce_paypal": "^1.0@beta",
+        "drupal/console": "^1.0.2",
+        "drupal/core": "^8.6.0",
+        "drupal/feeds": "^3.0@alpha",
+        "drupal/google_analytics": "^3.0",
+        "drupal/imce": "^1.7",
+        "drupal/metatag": "^1.8",
+        "drupal/parallax_bg": "^1.0",
+        "drupal/pathauto": "^1.4",
+        "drupal/recaptcha": "^2.4",
+        "drupal/search_api": "~1.0",
+        "drupal/simple_sitemap": "^3.1",
+        "drupal/slick": "^1.1",
+        "drupal/slick_extras": "^1.0@RC",
+        "drupal/slick_lightbox": "^1.0",
+        "drupal/swiftmailer": "~1.0",
+        "drupal/token": "~1.0",
+        "drupal/video_embed_field": "^2.1",
+        "drupal/views_infinite_scroll": "^1.5",
+        "drupal/webform": "^5.2",
+        "drupalcommerce/commerce_base": "dev-8.x-1.x",
+        "drush/drush": "^9.6",
+        "oomphinc/composer-installers-extender": "^1.1",
+        "webflo/drupal-finder": "^1.0",
+        "webmozart/path-util": "^2.3"
+    },
+    "require-dev": {
+        "webflo/drupal-core-require-dev": "^8.6.0"
+    },
+    "conflict": {
+        "drupal/drupal": "*"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "classmap": [
+            "scripts/composer/ScriptHandler.php"
+        ]
+    },
+    "scripts": {
+        "drupal-scaffold": "DrupalComposer\\DrupalScaffold\\Plugin::scaffold",
+        "pre-install-cmd": [
+            "DrupalProject\\composer\\ScriptHandler::checkComposerVersion"
+        ],
+        "pre-update-cmd": [
+            "DrupalProject\\composer\\ScriptHandler::checkComposerVersion"
+        ],
+        "post-install-cmd": [
+            "DrupalProject\\composer\\ScriptHandler::createRequiredFiles"
+        ],
+        "post-update-cmd": [
+            "DrupalProject\\composer\\ScriptHandler::createRequiredFiles"
+        ]
+    },
+    "extra": {
+        "patchLevel": {
+            "drupal/core": "-p2"
+        },
+        "installer-types": [
+            "bower-asset",
+            "npm-asset"
+        ],
+        "installer-paths": {
+            "web/core": [
+                "type:drupal-core"
+            ],
+            "web/libraries/{$name}": [
+                "type:drupal-library",
+                "type:bower-asset",
+                "type:npm-asset"
+            ],
+            "web/modules/contrib/{$name}": [
+                "type:drupal-module"
+            ],
+            "web/profiles/contrib/{$name}": [
+                "type:drupal-profile"
+            ],
+            "web/themes/contrib/{$name}": [
+                "type:drupal-theme"
+            ],
+            "drush/contrib/{$name}": [
+                "type:drupal-drush"
+            ]
+        },
+        "drupal-scaffold": {
+            "initial": {
+                ".editorconfig": "../.editorconfig",
+                ".gitattributes": "../.gitattributes"
+            }
+        }
+    }
+}
