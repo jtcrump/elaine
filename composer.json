@@ -52,6 +52,7 @@
         "drupal/slick": "^1.1",
         "drupal/slick_extras": "^1.0@RC",
         "drupal/slick_lightbox": "^1.0",
+        "drupal/slick_views": "^2.0",
         "drupal/swiftmailer": "~1.0",
         "drupal/token": "~1.0",
         "drupal/video_embed_field": "^2.1",
