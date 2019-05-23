@@ -1,6 +1,12 @@
 //
 // Header
-// --------------------------------------------------
+.container .highlighted {
+width: 150%;
+  margin-left: -25%;
+  margin-top: -20px;
+}// --------------------------------------------------
+
+
 .region-header {
   margin-bottom: 20px;
   padding: 20px 0;
@@ -20,6 +26,7 @@
       margin-right: -15px;
     }
   }
+
   .menu-catalog {
     display: none;
     justify-content: space-between;
