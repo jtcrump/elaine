@@ -8,6 +8,11 @@
 
 # Ignore Drupal's file directory
 # /web/sites/*/files/
+/web/sites/*/files/php/*
+/web/sites/*/files/twig/*
+/web/sites/*/files/js/*
+/web/sites/*/files/*/.htaccess
+*.bak
 
 # Ignore SimpleTest multi-site environment.
 /web/sites/simpletest/
