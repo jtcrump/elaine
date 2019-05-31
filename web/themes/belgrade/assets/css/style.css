@@ -7983,6 +7983,7 @@ html.js .ajax-new-content:empty {
 }
 
 .breadcrumb {
+  margin-left: 20%;
   font-size: 16px;
 }
 
@@ -8578,6 +8579,24 @@ table .checkbox.form-no-label, table .radio.form-no-label {
   z-index: 2;
 }
 
+.block-views-blockcategories-block-1 h2 {
+  margin-top: -180px;
+  margin-bottom: 180px;
+  font-weight: bold;
+  width: 100%;
+  text-align: center;
+  padding: 15px;
+}
+
+.block-views-blockcategories-block-1 h2 a {
+  color: white;
+}
+
+.block-views-blockcategories-block-1 img {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /**
  * Icon styles.
  */
@@ -8597,6 +8616,11 @@ a.icon-after .glyphicon {
 .btn.icon-after .glyphicon, .form-wrapper__returning-customer a.icon-after .glyphicon, .cart-block--offcanvas-contents__links a.icon-after .glyphicon {
   margin-left: .25em;
   margin-right: -.25em;
+}
+
+.a2a_kit {
+  margin-top: 50px;
+  float: left;
 }
 
 /**
@@ -9456,14 +9480,15 @@ body.toolbar-fixed.toolbar-vertical.toolbar-tray-open.toolbar-fixed .toolbar-tra
 
 .region-header {
   margin-bottom: 20px;
-  padding: 20px 0;
+  padding: 0 0;
+  background-color: #babad3;
 }
 
 .region-header .logo {
   display: flex;
   flex-shrink: 0;
   margin-right: auto;
-  max-height: 42px;
+  max-height: 82px;
 }
 
 .region-header > .container {
@@ -9512,7 +9537,7 @@ body.toolbar-fixed.toolbar-vertical.toolbar-tray-open.toolbar-fixed .toolbar-tra
 
 @media screen and (min-width: 768px) {
   .region-header {
-    padding: 90px 0 75px 0;
+    padding: 30px 0 35px 0;
   }
   .region-header .menu-catalog {
     display: flex;
@@ -9534,9 +9559,9 @@ body.toolbar-fixed.toolbar-vertical.toolbar-tray-open.toolbar-fixed .toolbar-tra
 }
 
 .region-navigation .menu a[data-drupal-link-system-path="<front>"] {
-  width: 270px;
-  height: 42px;
-  margin: 70px auto;
+  width: 300px;
+  height: 120px;
+  margin: 20px auto;
   padding: 0;
   background: url("../../logo-inverted.svg") no-repeat center;
 }
@@ -10362,6 +10387,12 @@ ol, ul {
   text-align: center;
 }
 
+.line:after,
+.form-header:after,
+.page-header:after {
+  background-color: #fff;
+}
+
 p:last-child,
 .form-group:last-child,
 .panel:last-child {
@@ -10380,6 +10411,12 @@ p:last-child,
 
 .main-container {
   overflow: hidden;
+}
+
+.product-wrapper {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1120px;
 }
 
 .help-block, .control-group .help-inline {
