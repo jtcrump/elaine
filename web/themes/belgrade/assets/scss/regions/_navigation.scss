@@ -18,9 +18,9 @@
     // home link
     a[data-drupal-link-system-path="<front>"]{
       @extend .text-hide;
-      width: 270px;
-      height: 42px;
-      margin: 70px auto;
+      width: 300px;
+      height: 120px;
+      margin: 20px auto;
       padding: 0;
       background: url("../../logo-inverted.svg") no-repeat center;
     }

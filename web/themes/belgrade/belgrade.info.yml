@@ -13,6 +13,8 @@ regions:
   highlighted: 'Highlighted'
   help: 'Help'
   content: 'Content'
+  content2a: 'Content Row 2 Col 1'
+  content2b: 'Content Row 2 Col 2'
   sidebar_first: 'Primary'
   sidebar_second: 'Secondary'
   footer: 'Footer'

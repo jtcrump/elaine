@@ -1,15 +1,21 @@
 //
 // Header
-// --------------------------------------------------
+.container .highlighted {
+width: 150%;
+  margin-left: -25%;
+  margin-top: -20px;
+}// --------------------------------------------------
+
+
 .region-header {
   margin-bottom: 20px;
-  padding: 20px 0;
-
+  padding: 0 0;
+background-color: $violet-medium;
   .logo{
     display: flex;
     flex-shrink: 0;
     margin-right: auto;
-    max-height: 42px;
+    max-height: 82px;
   }
 
   > .container{
@@ -20,6 +26,7 @@
       margin-right: -15px;
     }
   }
+
   .menu-catalog {
     display: none;
     justify-content: space-between;
@@ -56,7 +63,7 @@
 
   // responsive overrides
   @media screen and (min-width: $grid-float-breakpoint) {
-    padding: 90px 0 75px 0;
+    padding: 30px 0 35px 0;
     .menu-catalog {
       display: flex;
     }
