@@ -114,13 +114,15 @@
 
 
 
-    <div class="container">
+
       {# Highlighted #}
       {% if page.highlighted %}
         {% block highlighted %}
           <div class="highlighted">{{ page.highlighted }}</div>
           {% endblock %}
       {% endif %}
+
+    <div class="container">
 
       {# Breadcrumbs #}
       {% if breadcrumb %}
@@ -208,6 +210,16 @@
         </div>
       {% endblock %}
       </div></div></div>
+
+
+      {# Full Width Row #}
+      {% if page.fullwidth %}
+        {% block fullwidth %}
+            {{ page.fullwidth }}
+        {% endblock %}
+      {% endif %}
+
+
 
 {% if page.footer %}
   {% block footer %}

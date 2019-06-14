@@ -1,0 +1,23 @@
+{% block content %}
+<style>.paragraph-wrapper::before {background-image: url({{ file_url(paragraph.field_background.entity.uri.value) }}); background-color:{{ paragraph.field_background_color.value }}; }</style>
+
+  <div {{ content_attributes.addClass(content_classes).setAttribute('id', content_id).setAttribute('aria-expanded','true') }} >
+    <div class="paragraph-wrapper">
+      <div class="container-paragraphs" style="color:{{ paragraph.field_font_color.value }};">
+        {% if paragraph.field_margins.value == 0 %}
+        <div {{ content_attributes.addClass('container') }}>
+        {% endif %}
+
+        <h3>{{ content.field_section_title }}</h3>
+        
+        {{ content.field_body }}
+
+        <p><button type="button" style="background-color: {{ paragraph.field_button_color.value }}">{{ content.field_button }}</button></p>
+        </div>
+
+    {% if paragraph.field_margins.value == 0 %}
+    </div>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}
