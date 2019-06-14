@@ -17,6 +17,7 @@ regions:
   content2b: 'Content Row 2 Col 2'
   sidebar_first: 'Primary'
   sidebar_second: 'Secondary'
+  fullwidth: 'Full Width Row'
   footer: 'Footer'
   page_top: 'Page top'
   page_bottom: 'Page bottom'

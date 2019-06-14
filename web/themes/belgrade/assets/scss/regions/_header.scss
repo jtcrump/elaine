@@ -1,11 +1,18 @@
 //
 // Header
-.container .highlighted {
-width: 150%;
-  margin-left: -25%;
+.highlighted {
+  /* margin-left: -33%; */
   margin-top: -20px;
+  margin-bottom: 40px;
+  max-height: 700px;
+  overflow: hidden;
 }// --------------------------------------------------
-
+.highlighted p img{
+  margin-top: -20%;
+margin-right: auto;
+margin-left: auto;
+width: 100%;
+}
 
 .region-header {
   margin-bottom: 20px;

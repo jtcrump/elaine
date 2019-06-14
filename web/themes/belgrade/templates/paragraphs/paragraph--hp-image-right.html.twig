@@ -1,0 +1,41 @@
+{% block content %}
+<style>.paragraph-wrapper-right::before {background-image: url({{ file_url(paragraph.field_background.entity.uri.value) }}); background-color:{{ paragraph.field_background_color.value }}; }</style>
+
+  <div {{ content_attributes.addClass(content_classes).setAttribute('id', content_id).setAttribute('aria-expanded','true') }} >
+    <div class="paragraph-wrapper-right">
+      <div class="container-paragraphs" style="color:{{ paragraph.field_font_color.value }};">
+        {% if paragraph.field_margins.value == 0 %}
+        <div {{ content_attributes.addClass('container') }}>
+        {% endif %}
+
+
+        <div class="col-lg-6">
+        <h3>{{ content.field_section_title }}</h3>
+
+        {{ content.field_body }}
+
+        <p><button type="button" style="background-color: {{ paragraph.field_button_color.value }}">{{ content.field_button }}</button></p>
+        </div>
+
+        <div class="col-lg-6 image-side">
+          <div class="image-caption-wrapper">
+            <div class="row">
+            {{ content.field_image }}
+            </div>
+            <div class="row">
+            {{ content.field_caption }}
+            </div>
+          </div>
+        </div>
+
+
+
+
+
+        {% if paragraph.field_margins.value == 0 %}
+        </div>
+        {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
