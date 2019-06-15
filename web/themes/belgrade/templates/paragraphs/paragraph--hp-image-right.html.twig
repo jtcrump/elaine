@@ -9,15 +9,16 @@
         {% endif %}
 
 
-        <div class="col-lg-6">
+        <div class="col-md-6">
+                  <div class="text-wrapper">
         <h3>{{ content.field_section_title }}</h3>
 
         {{ content.field_body }}
 
         <p><button type="button" style="background-color: {{ paragraph.field_button_color.value }}">{{ content.field_button }}</button></p>
-        </div>
+        </div></div>
 
-        <div class="col-lg-6 image-side">
+        <div class="col-md-6 image-side">
           <div class="image-caption-wrapper">
             <div class="row">
             {{ content.field_image }}
