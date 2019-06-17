@@ -9714,6 +9714,10 @@ body.toolbar-fixed.toolbar-vertical.toolbar-tray-open.toolbar-fixed .toolbar-tra
 .view-categories h2 {
   background-color: #dddddd;
   margin-top: 0;
+  max-width: 360px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .path-user:not(.logged-in) .page-header {
