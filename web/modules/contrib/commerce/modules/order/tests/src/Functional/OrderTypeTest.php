@@ -43,12 +43,9 @@ class OrderTypeTest extends OrderBrowserTestBase {
 
     $order_type = OrderType::load('foo');
     $this->assertNotEmpty($order_type);
+    $this->assertEmpty($order_type->getNumberPatternId());
     $this->assertEquals($edit['refresh_mode'], $order_type->getRefreshMode());
     $this->assertEquals($edit['refresh_frequency'], $order_type->getRefreshFrequency());
-
-    // Testing the target type of the order_items field.
-    $settings = $this->config('field.storage.commerce_order.order_items')->get('settings');
-    $this->assertEquals('commerce_order_item', $settings['target_type']);
   }
 
   /**
@@ -58,6 +55,7 @@ class OrderTypeTest extends OrderBrowserTestBase {
     $this->drupalGet('admin/commerce/config/order-types/default/edit');
     $edit = [
       'label' => 'Default!',
+      'generate_number' => FALSE,
       'refresh_mode' => 'always',
       'refresh_frequency' => 60,
     ];
@@ -67,6 +65,7 @@ class OrderTypeTest extends OrderBrowserTestBase {
     $order_type = OrderType::load('default');
     $this->assertNotEmpty($order_type);
     $this->assertEquals($edit['label'], $order_type->label());
+    $this->assertEmpty($order_type->getNumberPatternId());
     $this->assertEquals($edit['refresh_mode'], $order_type->getRefreshMode());
     $this->assertEquals($edit['refresh_frequency'], $order_type->getRefreshFrequency());
   }
@@ -88,11 +87,13 @@ class OrderTypeTest extends OrderBrowserTestBase {
     $order_type = OrderType::load('default');
     $this->assertNotEmpty($order_type);
     $this->assertEquals('Default', $order_type->label());
+    $this->assertEquals('order_default', $order_type->getNumberPatternId());
 
     // Confirm that the new order type has the expected data.
     $order_type = OrderType::load('default2');
     $this->assertNotEmpty($order_type);
     $this->assertEquals('Default2', $order_type->label());
+    $this->assertEquals('order_default', $order_type->getNumberPatternId());
   }
 
   /**
@@ -105,7 +106,6 @@ class OrderTypeTest extends OrderBrowserTestBase {
       'label' => 'Label for foo',
       'workflow' => 'order_default',
     ]);
-    commerce_order_add_order_items_field($order_type);
     $order = $this->createEntity('commerce_order', [
       'type' => $order_type->id(),
       'mail' => $this->loggedInUser->getEmail(),

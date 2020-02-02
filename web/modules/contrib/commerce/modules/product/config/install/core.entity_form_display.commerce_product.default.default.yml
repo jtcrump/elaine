@@ -4,8 +4,6 @@ dependencies:
   config:
     - commerce_product.commerce_product_type.default
     - field.field.commerce_product.default.body
-    - field.field.commerce_product.default.stores
-    - field.field.commerce_product.default.variations
   module:
     - commerce
     - path
@@ -30,12 +28,6 @@ content:
     settings: {  }
     third_party_settings: {  }
     region: content
-  langcode:
-    type: language_select
-    weight: 3
-    region: content
-    settings: {  }
-    third_party_settings: {  }
   path:
     type: path
     weight: 7
@@ -72,6 +64,7 @@ content:
     weight: 4
     settings:
       match_operator: CONTAINS
+      match_limit: 10
       size: 60
       placeholder: ''
     third_party_settings: {  }

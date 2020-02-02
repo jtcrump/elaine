@@ -100,6 +100,7 @@ abstract class LocalTaxTypeBase extends TaxTypeBase implements LocalTaxTypeInter
    * {@inheritdoc}
    */
   public function apply(OrderInterface $order) {
+    $calculation_date = $order->getCalculationDate();
     $store = $order->getStore();
     $prices_include_tax = $store->get('prices_include_tax')->value;
     $zones = $this->getZones();
@@ -112,7 +113,7 @@ abstract class LocalTaxTypeBase extends TaxTypeBase implements LocalTaxTypeInter
       $rates = $this->resolveRates($order_item, $customer_profile);
       foreach ($rates as $zone_id => $rate) {
         $zone = $zones[$zone_id];
-        $percentage = $rate->getPercentage();
+        $percentage = $rate->getPercentage($calculation_date);
         // Stores are allowed to enter prices without tax even if they're
         // going to be displayed with tax, and vice-versa.
         // Now that the rates are known, use them to determine the final
@@ -141,7 +142,7 @@ abstract class LocalTaxTypeBase extends TaxTypeBase implements LocalTaxTypeInter
           'label' => $zone->getDisplayLabel(),
           'amount' => $tax_amount,
           'percentage' => $percentage->getNumber(),
-          'source_id' => $this->entityId . '|' . $zone->getId() . '|' . $rate->getId(),
+          'source_id' => $this->parentEntity->id() . '|' . $zone->getId() . '|' . $rate->getId(),
           'included' => $this->isDisplayInclusive(),
         ]));
       }
@@ -225,8 +226,14 @@ abstract class LocalTaxTypeBase extends TaxTypeBase implements LocalTaxTypeInter
    *   The tax rates, keyed by tax zone ID.
    */
   protected function resolveRates(OrderItemInterface $order_item, ProfileInterface $customer_profile) {
-    $rates = [];
     $zones = $this->resolveZones($order_item, $customer_profile);
+    if (!$zones) {
+      return [];
+    }
+
+    // Provide the tax type entity to the resolvers.
+    $this->chainRateResolver->setTaxType($this->parentEntity);
+    $rates = [];
     foreach ($zones as $zone) {
       $rate = $this->chainRateResolver->resolve($zone, $order_item, $customer_profile);
       if (is_object($rate)) {
@@ -288,7 +295,7 @@ abstract class LocalTaxTypeBase extends TaxTypeBase implements LocalTaxTypeInter
     ];
     foreach ($zones as $zone) {
       if (count($zones) > 1) {
-        $element['table']['zone-' . $zone->getId()] = [
+        $element['table'][$zone->getId()] = [
           '#attributes' => [
             'class' => ['region-title'],
             'no_striping' => TRUE,
@@ -305,7 +312,7 @@ abstract class LocalTaxTypeBase extends TaxTypeBase implements LocalTaxTypeInter
           return $percentage->toString();
         }, $rate->getPercentages());
 
-        $element['table'][] = [
+        $element['table'][$zone->getId() . '|' . $rate->getId()] = [
           'rate' => [
             '#markup' => $rate->getLabel(),
           ],
