@@ -3,6 +3,8 @@
 namespace Drupal\Tests\commerce_promotion\FunctionalJavascript;
 
 use Drupal\commerce_promotion\Entity\Promotion;
+use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 use Drupal\Tests\commerce\FunctionalJavascript\CommerceWebDriverTestBase;
 
 /**
@@ -45,12 +47,12 @@ class PromotionTest extends CommerceWebDriverTestBase {
     $name = $this->randomMachineName(8);
     $this->getSession()->getPage()->fillField('name[0][value]', $name);
     $this->getSession()->getPage()->selectFieldOption('offer[0][target_plugin_id]', 'order_item_percentage_off');
-    $this->waitForAjaxToFinish();
+    $this->assertSession()->assertWaitOnAjaxRequest();
     $this->getSession()->getPage()->fillField('offer[0][target_plugin_configuration][order_item_percentage_off][percentage]', '10.0');
 
     // Change, assert any values reset.
     $this->getSession()->getPage()->selectFieldOption('offer[0][target_plugin_id]', 'order_percentage_off');
-    $this->waitForAjaxToFinish();
+    $this->assertSession()->assertWaitOnAjaxRequest();
     $this->assertSession()->fieldValueNotEquals('offer[0][target_plugin_configuration][order_percentage_off][percentage]', '10.0');
     $this->getSession()->getPage()->fillField('offer[0][target_plugin_configuration][order_percentage_off][percentage]', '10.0');
 
@@ -63,7 +65,7 @@ class PromotionTest extends CommerceWebDriverTestBase {
     $vertical_tab_element = reset($vertical_tab_elements);
     $vertical_tab_element->click();
     $this->getSession()->getPage()->checkField('Current order total');
-    $this->waitForAjaxToFinish();
+    $this->assertSession()->assertWaitOnAjaxRequest();
     $this->getSession()->getPage()->fillField('conditions[form][order][order_total_price][configuration][form][amount][number]', '50.00');
 
     // Confirm that the usage limit widget works properly.
@@ -75,6 +77,8 @@ class PromotionTest extends CommerceWebDriverTestBase {
     $this->assertTrue($this->getSession()->getDriver()->isVisible($usage_limit_xpath));
     $this->getSession()->getPage()->fillField('usage_limit[0][usage_limit]', '99');
 
+    $this->setRawFieldValue('start_date[0][value][date]', '2019-11-29');
+    $this->setRawFieldValue('start_date[0][value][time]', '10:30:00');
     $this->submitForm([], t('Save'));
     $this->assertSession()->pageTextContains("Saved the $name promotion.");
     $rows = $this->getSession()->getPage()->findAll('xpath', '//table/tbody/tr/td[text()="' . $name . '"]');
@@ -88,9 +92,34 @@ class PromotionTest extends CommerceWebDriverTestBase {
     $condition = reset($conditions);
     $this->assertEquals('50.00', $condition->getConfiguration()['amount']['number']);
     $this->assertEquals('99', $promotion->getUsageLimit());
+    $this->assertEquals('2019-11-29 10:30:00', $promotion->getStartDate()->format('Y-m-d H:i:s'));
+    $this->assertNull($promotion->getEndDate());
+
     $this->drupalGet($promotion->toUrl('edit-form'));
     $this->getSession()->getPage()->hasCheckedField('Limited number of uses');
     $this->assertTrue($this->getSession()->getDriver()->isVisible($usage_limit_xpath));
+  }
+
+  /**
+   * Tests creating a promotion using the "Save and add coupons" button.
+   */
+  public function testCreatePromotionWithSaveAndAddCoupons() {
+    $this->drupalGet('admin/commerce/promotions');
+    $this->getSession()->getPage()->clickLink('Add promotion');
+
+    $name = $this->randomString();
+    $this->getSession()->getPage()->fillField('name[0][value]', $name);
+    $this->getSession()->getPage()->selectFieldOption('offer[0][target_plugin_id]', 'order_item_fixed_amount_off');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->getSession()->getPage()->fillField('offer[0][target_plugin_configuration][order_item_fixed_amount_off][amount][number]', '10.00');
+    $this->submitForm([], t('Save and add coupons'));
+    $this->assertSession()->pageTextContains("Saved the $name promotion.");
+
+    /** @var \Drupal\commerce_promotion\Entity\PromotionInterface $promotion */
+    $promotion = Promotion::load(1);
+    $offer = $promotion->getOffer();
+    $this->assertEquals('order_item_fixed_amount_off', $offer->getPluginId());
+    $this->assertEquals('10.00', $offer->getConfiguration()['amount']['number']);
   }
 
   /**
@@ -101,19 +130,19 @@ class PromotionTest extends CommerceWebDriverTestBase {
     $this->getSession()->getPage()->clickLink('Add promotion');
     $this->drupalGet('promotion/add');
 
-    // Check the integrity of the form.
     $this->assertSession()->fieldExists('name[0][value]');
-
     $this->getSession()->getPage()->fillField('offer[0][target_plugin_id]', 'order_percentage_off');
-    $this->waitForAjaxToFinish();
+    $this->assertSession()->assertWaitOnAjaxRequest();
 
+    $end_date = new DrupalDateTime('now', 'UTC');
+    $end_date = $end_date->modify('+1 month');
     $name = $this->randomMachineName(8);
     $this->getSession()->getPage()->checkField('end_date[0][has_value]');
+    $this->setRawFieldValue('end_date[0][container][value][date]', $end_date->format('Y-m-d'));
+    $this->setRawFieldValue('end_date[0][container][value][time]', $end_date->format('H:i:s'));
     $edit = [
       'name[0][value]' => $name,
       'offer[0][target_plugin_configuration][order_percentage_off][percentage]' => '10.0',
-      // Set an end date.
-      'end_date[0][container][value][date]' => '1010' . date("Y") + 1,
     ];
     $this->drupalPostForm(NULL, $edit, t('Save'));
     $this->assertSession()->pageTextContains("Saved the $name promotion.");
@@ -124,6 +153,8 @@ class PromotionTest extends CommerceWebDriverTestBase {
     $promotion = Promotion::load(1);
     $offer = $promotion->getOffer();
     $this->assertEquals('0.10', $offer->getConfiguration()['percentage']);
+    $storage_format = DateTimeItemInterface::DATETIME_STORAGE_FORMAT;
+    $this->assertEquals($end_date->format($storage_format), $promotion->getEndDate()->format($storage_format));
   }
 
   /**
@@ -150,6 +181,7 @@ class PromotionTest extends CommerceWebDriverTestBase {
           ],
         ],
       ],
+      'start_date' => '2019-10-07T13:37:00',
     ]);
 
     /** @var \Drupal\commerce\Plugin\Field\FieldType\PluginItem $offer_field */
@@ -161,6 +193,7 @@ class PromotionTest extends CommerceWebDriverTestBase {
     $this->assertSession()->checkboxChecked('Current order total');
     $this->assertSession()->fieldValueEquals('conditions[form][order][order_total_price][configuration][form][amount][number]', '9.10');
 
+    $this->setRawFieldValue('start_date[0][value][time]', '14:15:13');
     $edit = [
       'name[0][value]' => '20% off',
       'offer[0][target_plugin_configuration][order_item_percentage_off][percentage]' => '20',
@@ -173,6 +206,7 @@ class PromotionTest extends CommerceWebDriverTestBase {
     $this->assertEquals('20% off', $promotion->getName());
     $offer = $promotion->getOffer();
     $this->assertEquals('0.20', $offer->getConfiguration()['percentage']);
+    $this->assertEquals('2019-10-07 14:15:13', $promotion->getStartDate()->format('Y-m-d H:i:s'));
   }
 
   /**

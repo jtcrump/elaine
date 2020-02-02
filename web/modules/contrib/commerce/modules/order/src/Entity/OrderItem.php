@@ -139,7 +139,7 @@ class OrderItem extends CommerceContentEntityBase implements OrderItemInterface 
    * {@inheritdoc}
    */
   public function isUnitPriceOverridden() {
-    return $this->get('overridden_unit_price')->value;
+    return (bool) $this->get('overridden_unit_price')->value;
   }
 
   /**
@@ -198,7 +198,7 @@ class OrderItem extends CommerceContentEntityBase implements OrderItemInterface 
    * {@inheritdoc}
    */
   public function usesLegacyAdjustments() {
-    return $this->get('uses_legacy_adjustments')->value;
+    return (bool) $this->get('uses_legacy_adjustments')->value;
   }
 
   /**
@@ -285,6 +285,18 @@ class OrderItem extends CommerceContentEntityBase implements OrderItemInterface 
    */
   public function setData($key, $value) {
     $this->get('data')->__set($key, $value);
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function unsetData($key) {
+    if (!$this->get('data')->isEmpty()) {
+      $data = $this->get('data')->first()->getValue();
+      unset($data[$key]);
+      $this->set('data', $data);
+    }
     return $this;
   }
 
@@ -444,7 +456,11 @@ class OrderItem extends CommerceContentEntityBase implements OrderItemInterface 
   public static function bundleFieldDefinitions(EntityTypeInterface $entity_type, $bundle, array $base_field_definitions) {
     /** @var \Drupal\commerce_order\Entity\OrderItemTypeInterface $order_item_type */
     $order_item_type = OrderItemType::load($bundle);
+    if (!$order_item_type) {
+      throw new \RuntimeException(sprintf('Could not load the "%s" order item type.', $bundle));
+    }
     $purchasable_entity_type = $order_item_type->getPurchasableEntityTypeId();
+
     $fields = [];
     $fields['purchased_entity'] = clone $base_field_definitions['purchased_entity'];
     if ($purchasable_entity_type) {

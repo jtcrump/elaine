@@ -13,6 +13,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Url;
 use Drupal\user\UserInterface;
+use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
 /**
  * Defines the product variation entity class.
@@ -35,7 +36,7 @@ use Drupal\user\UserInterface;
  *     "permission_provider" = "Drupal\commerce_product\ProductVariationPermissionProvider",
  *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
  *     "list_builder" = "Drupal\commerce_product\ProductVariationListBuilder",
- *     "views_data" = "Drupal\commerce\CommerceEntityViewsData",
+ *     "views_data" = "Drupal\commerce_product\ProductVariationViewsData",
  *     "form" = {
  *       "add" = "Drupal\commerce_product\Form\ProductVariationForm",
  *       "edit" = "Drupal\commerce_product\Form\ProductVariationForm",
@@ -103,6 +104,13 @@ class ProductVariation extends CommerceContentEntityBase implements ProductVaria
    * {@inheritdoc}
    */
   public function toUrl($rel = 'canonical', array $options = []) {
+    // Product variation URLs depend on the parent product.
+    if (!$this->getProductId()) {
+      // RouteNotFoundException tells EntityBase::uriRelationships()
+      // to skip this product variation's link relationships.
+      throw new RouteNotFoundException();
+    }
+
     // StringFormatter assumes 'revision' is always a valid link template.
     if (in_array($rel, ['canonical', 'revision'])) {
       $route_name = 'entity.commerce_product.canonical';
@@ -341,7 +349,7 @@ class ProductVariation extends CommerceContentEntityBase implements ProductVaria
     $attribute_values = [];
     foreach ($this->getAttributeFieldNames() as $field_name) {
       $field = $this->get($field_name);
-      if (!$field->isEmpty()) {
+      if (!$field->isEmpty() && $field->entity) {
         $attribute_values[$field_name] = $field->entity;
       }
     }
