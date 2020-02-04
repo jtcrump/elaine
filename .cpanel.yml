@@ -2,7 +2,7 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/tm7ojzzmbknt/public_html/
-    - /bin/cp -R web $DEPLOYPATH
-    - /bin/cp -R vendor $DEPLOYPATH
-    - /bin/cp -R scripts $DEPLOYPATH
-    - /bin/cp -R config $DEPLOYPATH
+    - /home/tm7ojzzmbknt/repositories/elaine -R web $DEPLOYPATH
+    - /home/tm7ojzzmbknt/repositories/elaine -R vendor $DEPLOYPATH
+    - /home/tm7ojzzmbknt/repositories/elaine -R scripts $DEPLOYPATH
+    - /home/tm7ojzzmbknt/repositories/elaine -R config $DEPLOYPATH
