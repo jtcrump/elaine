@@ -17,6 +17,15 @@ class StockLevelWidgetsTest extends StockLevelFieldTestBase {
   use StockLevelFieldCreationTrait;
 
   /**
+   * Modules to enable.
+   *
+   * @var array
+   */
+  public static $modules = [
+    'commerce_stock_ui',
+  ];
+
+  /**
    * Testing the commerce_stock_level_transaction_form_link widget.
    */
   public function testLinkToTransactionFormWidget() {

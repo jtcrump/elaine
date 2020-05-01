@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Ban module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function commerce_base() {
+
+}

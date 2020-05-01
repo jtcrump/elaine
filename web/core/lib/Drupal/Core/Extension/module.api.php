@@ -180,13 +180,21 @@ function hook_module_preinstall($module) {
  *
  * @param $modules
  *   An array of the modules that were installed.
+ * @param bool $is_syncing
+ *   TRUE if the module is being installed as part of a configuration import. In
+ *   these cases, your hook implementation needs to carefully consider what
+ *   changes, if any, it should make. For example, it should not make any
+ *   changes to configuration objects or entities.
  *
  * @see \Drupal\Core\Extension\ModuleInstaller::install()
  * @see hook_install()
  */
-function hook_modules_installed($modules) {
+function hook_modules_installed($modules, $is_syncing) {
   if (in_array('lousy_module', $modules)) {
     \Drupal::state()->set('mymodule.lousy_module_compatibility', TRUE);
+  }
+  if (!$is_syncing) {
+    \Drupal::service('mymodule.service')->doSomething($modules);
   }
 }
 
@@ -220,15 +228,26 @@ function hook_modules_installed($modules) {
  * Please be sure that anything added or modified in this function that can
  * be removed during uninstall should be removed with hook_uninstall().
  *
+ * @param bool $is_syncing
+ *   TRUE if the module is being installed as part of a configuration import. In
+ *   these cases, your hook implementation needs to carefully consider what
+ *   changes, if any, it should make. For example, it should not make any
+ *   changes to configuration objects or entities.
+ *
+ * @see \Drupal\Core\Config\ConfigInstallerInterface::isSyncing
  * @see hook_schema()
  * @see \Drupal\Core\Extension\ModuleInstaller::install()
  * @see hook_uninstall()
  * @see hook_modules_installed()
  */
-function hook_install() {
+function hook_install($is_syncing) {
   // Create the styles directory and ensure it's writable.
   $directory = \Drupal::config('system.file')->get('default_scheme') . '://styles';
   \Drupal::service('file_system')->prepareDirectory($directory, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
+  if (!$is_syncing) {
+    // Modify a configuration value because we're not syncing.
+    \Drupal::configFactory()->getEditable('system.file')->set('default_scheme', 'private')->save();
+  }
 }
 
 /**
@@ -253,14 +272,22 @@ function hook_module_preuninstall($module) {
  *
  * @param $modules
  *   An array of the modules that were uninstalled.
+ * @param bool $is_syncing
+ *   TRUE if the module is being uninstalled as part of a configuration import.
+ *   In these cases, your hook implementation needs to carefully consider what
+ *   changes, if any, it should make. For example, it should not make any
+ *   changes to configuration objects or entities.
  *
  * @see hook_uninstall()
  */
-function hook_modules_uninstalled($modules) {
+function hook_modules_uninstalled($modules, $is_syncing) {
   if (in_array('lousy_module', $modules)) {
     \Drupal::state()->delete('mymodule.lousy_module_compatibility');
   }
   mymodule_cache_rebuild();
+  if (!$is_syncing) {
+    \Drupal::service('mymodule.service')->doSomething($modules);
+  }
 }
 
 /**
@@ -278,13 +305,22 @@ function hook_modules_uninstalled($modules) {
  * tables are removed, allowing your module to query its own tables during
  * this routine.
  *
+ * @param bool $is_syncing
+ *   TRUE if the module is being uninstalled as part of a configuration import.
+ *   In these cases, your hook implementation needs to carefully consider what
+ *   changes, if any, it should make. For example, it should not make any
+ *   changes to configuration objects or entities.
+ *
  * @see hook_install()
  * @see hook_schema()
  * @see hook_modules_uninstalled()
  */
-function hook_uninstall() {
+function hook_uninstall($is_syncing) {
   // Remove the styles directory and generated images.
   \Drupal::service('file_system')->deleteRecursive(\Drupal::config('system.file')->get('default_scheme') . '://styles');
+  if (!$is_syncing) {
+    \Drupal::service('mymodule.service')->removeContent();
+  }
 }
 
 /**
@@ -714,6 +750,7 @@ function hook_update_N(&$sandbox) {
  * @ingroup update_api
  *
  * @see hook_update_N()
+ * @see hook_removed_post_updates()
  */
 function hook_post_update_NAME(&$sandbox) {
   // Example of updating some content.
@@ -745,6 +782,30 @@ function hook_post_update_NAME(&$sandbox) {
   }
 
   return $result;
+}
+
+/**
+ * Return an array of removed hook_post_update_NAME() function names.
+ *
+ * This should be used to indicate post-update functions that have existed in
+ * some previous version of the module, but are no longer available.
+ *
+ * This implementation has to be placed in a MODULE.post_update.php file.
+ *
+ * @return string[]
+ *   An array where the keys are removed post-update function names, and the
+ *   values are the first stable version in which the update was removed.
+ *
+ * @ingroup update_api
+ *
+ * @see hook_post_update_NAME()
+ */
+function hook_removed_post_updates() {
+  return [
+    'mymodule_post_update_foo' => '8.x-2.0',
+    'mymodule_post_update_bar' => '8.x-3.0',
+    'mymodule_post_update_baz' => '8.x-3.0',
+  ];
 }
 
 /**

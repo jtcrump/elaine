@@ -2,6 +2,8 @@
 
 namespace Drupal\Core\Database;
 
+use Drupal\Core\Database\Query\Condition;
+
 /**
  * Base Database API class.
  *
@@ -607,7 +609,7 @@ abstract class Connection {
     // Use default values if not already set.
     $options += $this->defaultOptions();
     if (isset($options['target'])) {
-      @trigger_error('Passing a \'target\' key to \\Drupal\\Core\\Database\\Connection::query $options argument is deprecated in Drupal 8.0.x and will be removed before Drupal 9.0.0. Instead, use \\Drupal\\Core\\Database\\Database::getConnection($target)->query(). See https://www.drupal.org/node/2993033.', E_USER_DEPRECATED);
+      @trigger_error('Passing a \'target\' key to \\Drupal\\Core\\Database\\Connection::query $options argument is deprecated in drupal:8.0.x and will be removed before drupal:9.0.0. Instead, use \\Drupal\\Core\\Database\\Database::getConnection($target)->query(). See https://www.drupal.org/node/2993033', E_USER_DEPRECATED);
     }
 
     try {
@@ -783,6 +785,11 @@ abstract class Connection {
       }
       $driver_class = $this->connectionOptions['namespace'] . '\\' . $class;
       $this->driverClasses[$class] = class_exists($driver_class) ? $driver_class : $class;
+      if ($this->driverClasses[$class] === 'Condition') {
+        // @todo Deprecate the fallback for contrib and custom drivers in 9.1.x
+        //   in https://www.drupal.org/project/drupal/issues/3120036.
+        $this->driverClasses[$class] = Condition::class;
+      }
     }
     return $this->driverClasses[$class];
   }
@@ -942,6 +949,22 @@ abstract class Connection {
       $this->schema = new $class($this);
     }
     return $this->schema;
+  }
+
+  /**
+   * Prepares and returns a CONDITION query object.
+   *
+   * @param string $conjunction
+   *   The operator to use to combine conditions: 'AND' or 'OR'.
+   *
+   * @return \Drupal\Core\Database\Query\Condition
+   *   A new Condition query object.
+   *
+   * @see \Drupal\Core\Database\Query\Condition
+   */
+  public function condition($conjunction) {
+    $class = $this->getDriverClass('Condition');
+    return new $class($conjunction);
   }
 
   /**

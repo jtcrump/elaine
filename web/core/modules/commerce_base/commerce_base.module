@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * @file
+ * Allows to ban individual IP addresses.
+ */
+
+
+/**
+ * Implements hook_help().
+ */
+function commerce_base() {
+
+}

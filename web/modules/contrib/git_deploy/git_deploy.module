@@ -1,0 +1,210 @@
+<?php
+
+/**
+ * @file
+ * Adds project, version and date information to projects checked out with Git.
+ */
+
+use Drupal\Core\Extension\Extension;
+use Drupal\update\UpdateManagerInterface;
+
+/**
+ * Null device.
+ *
+ * If /dev/null does not exist, assume we are on Windows.
+ */
+define('GIT_DEPLOY_ERROR_DUMP', file_exists('/dev/null') ? '/dev/null' : 'nul');
+
+/**
+ * Implements hook_system_info_alter().
+ */
+function git_deploy_system_info_alter(array &$info, Extension $file, $type) {
+  static $projects = [];
+  if ($file->origin == 'core' || empty($info['version'])) {
+    // Make sure Git operates in the right directory.
+    $git = 'git -C ' . escapeshellarg($file->getPath());
+    // Verify that we are in a Git repository.
+    $directory = exec("$git rev-parse --show-toplevel 2> " . GIT_DEPLOY_ERROR_DUMP);
+    if (!empty($directory)) {
+      // Only check Git once per repository.
+      if (!isset($projects[$directory])) {
+        $projects[$directory] = [];
+        // Get upstream info.
+        $upstream = _git_deploy_get_upstream($git, $file->origin == 'core' ? ['8.*', '9.*'] : ['*.*']);
+        // Find the project name based on fetch URL.
+        if (isset($upstream['remote'])) {
+          $fetch_url = exec("$git config --get " . escapeshellarg("remote.$upstream[remote].url") . ' 2> ' . GIT_DEPLOY_ERROR_DUMP);
+          if (!empty($fetch_url)) {
+            $projects[$directory]['project'] = basename($fetch_url, '.git');
+          }
+        }
+        // Set version from tag.
+        if (isset($upstream['tag'])) {
+          $projects[$directory]['version'] = $upstream['tag'];
+        }
+        // If tag was not found, set version from branch.
+        elseif (isset($upstream['branch'])) {
+          $projects[$directory]['version'] = "$upstream[branch]-dev";
+        }
+        // Set project datestamp.
+        if (isset($upstream['datestamp'])) {
+          $projects[$directory]['datestamp'] = $upstream['datestamp'];
+        }
+      }
+      $info = $projects[$directory] + $info;
+    }
+  }
+}
+
+/**
+ * Gets upstream info.
+ *
+ * @param string $git
+ *   Git formatted for command line.
+ * @param string[] $patterns
+ *   List of patterns for matching branch names, without trailing ".x". Must not
+ *   include repository name. Also used to check for release tags.
+ *
+ * @return string[]
+ *   Array with the following keys, if found:
+ *   - branch: Best matching remote branch.
+ *   - remote: Remote repository containing best matching branch.
+ *   - tag: Release tag from last common commit in matching branch.
+ *   - datestamp: Unix timestamp of last common commit.
+ */
+function _git_deploy_get_upstream($git, array $patterns = ['*']) {
+  $upstream = [];
+  // Get tracked upstream branch.
+  $remote = exec("$git rev-parse --abbrev-ref @{upstream} 2> " . GIT_DEPLOY_ERROR_DUMP);
+  if ($remote !== '' && preg_match('/^.*\/(?:' . implode('|', str_replace(['.', '*'], ['\.', '.*'], $patterns)) . ')\.x$/', $remote)) {
+    // Set remote.
+    list($upstream['branch'], $upstream['remote']) = array_reverse(explode('/', $remote));
+    // Find last common commit in both local and upstream.
+    $last_base = escapeshellarg(exec("$git merge-base HEAD " . escapeshellarg($remote) . ' 2> ' . GIT_DEPLOY_ERROR_DUMP));
+    // Get time of last common commit.
+    $upstream['datestamp'] = exec("$git log -1 --pretty=format:%at $last_base 2> " . GIT_DEPLOY_ERROR_DUMP);
+  }
+  else {
+    // If local does not track an upstream branch, find best matching remote
+    // branch.
+    exec("$git remote 2> " . GIT_DEPLOY_ERROR_DUMP, $remotes);
+    if (!empty($remotes)) {
+      // Only consider the origin remote, if it exists.
+      $branch_patterns = substr_replace($patterns, in_array('origin', $remotes) ? 'origin/' : '*/', 0, 0);
+      // Append ".x" to the branch patterns.
+      $branch_patterns = substr_replace($branch_patterns, '.x', array_map('strlen', $branch_patterns));
+      // Enclose branch patterns in quotes and join together.
+      $branch_pattern = implode(' ', array_map('escapeshellarg', $branch_patterns));
+      // List matching branches by name in descending order.
+      exec("$git branch -r --sort=-refname --list --format='%(refname:short)' $branch_pattern 2> " . GIT_DEPLOY_ERROR_DUMP, $branches);
+      if (!empty($branches)) {
+        $remote = array_shift($branches);
+        // Find last common commit in both local and upstream.
+        $last_base = escapeshellarg(exec("$git merge-base HEAD " . escapeshellarg($remote) . ' 2> ' . GIT_DEPLOY_ERROR_DUMP));
+        if (!empty($branches)) {
+          // There's no reason to check other branches for a more recent common
+          // commit if they do not contain the base commit, so filter the branch
+          // list.
+          exec("$git branch -r --sort=-refname --contains $last_base --no-contains " . escapeshellarg($remote) . " --format='%(refname:short)' $branch_pattern 2> " . GIT_DEPLOY_ERROR_DUMP, $branches);
+          while (!empty($branches)) {
+            $branch = array_shift($branches);
+            // Find last common commit in both local and upstream.
+            $base = escapeshellarg(exec("$git merge-base HEAD " . escapeshellarg($branch) . ' 2> ' . GIT_DEPLOY_ERROR_DUMP));
+            // Count commits since last base commit.
+            $difference = exec("$git rev-list --count $base ^$last_base 2> " . GIT_DEPLOY_ERROR_DUMP);
+            // If base contains new commits, it is a better match.
+            if (!empty($difference)) {
+              $remote = $branch;
+              $last_base = $base;
+              if (!empty($branches)) {
+                // Filter the branch list.
+                exec("$git branch -r --sort=-refname --contains $last_base --no-contains " . escapeshellarg($remote) . " --format='%(refname:short)' $branch_pattern 2> " . GIT_DEPLOY_ERROR_DUMP, $branches);
+              }
+            }
+          }
+        }
+        // Set remote.
+        list($upstream['branch'], $upstream['remote']) = array_reverse(explode('/', $remote));
+        // Add wildcard to end of tag pattern.
+        $tag_patterns = substr_replace($patterns, '.*', array_map('strlen', $patterns));
+        // Enclose tag pattern in quotes.
+        $tag_patterns = array_map('escapeshellarg', $patterns);
+        // Check for latest release tag from last common commit.
+        exec("$git tag --points-at $last_base " . implode(' ', $tag_patterns) . ' 2> ' . GIT_DEPLOY_ERROR_DUMP, $tags);
+        if (!empty($tags)) {
+          usort($tags, 'version_compare');
+          $upstream['tag'] = end($tags);
+        }
+        // Get time of last common commit.
+        $upstream['datestamp'] = exec("$git log -1 --pretty=format:%at $last_base 2> " . GIT_DEPLOY_ERROR_DUMP);
+      }
+    }
+  }
+  return $upstream;
+}
+
+/**
+ * Implements hook_update_status_alter().
+ */
+function git_deploy_update_status_alter(&$projects) {
+  foreach ($projects as $project => &$project_info) {
+    // Override the update status on dev branches.
+    if ($project_info['install_type'] == 'dev' && in_array($project_info['status'], [UpdateManagerInterface::NOT_SECURE, UpdateManagerInterface::NOT_CURRENT])) {
+      // Make sure Git operates in the right directory.
+      $git = 'git -C ' . escapeshellarg(drupal_get_path(preg_replace('/-disabled$/', '', $project_info['project_type']), key($project_info['includes'])));
+      // Verify that we are in a Git repository.
+      exec("$git rev-parse 2> " . GIT_DEPLOY_ERROR_DUMP, $output, $return_val);
+      if ($return_val === 0) {
+        $version = $project_info['existing_version'];
+        if (isset($project_info['releases'][$version])) {
+          $release = $project_info['releases'][$version];
+          if (isset($release['tag'])) {
+            // Get tracked upstream branch.
+            // @todo: Fetching remote commits requires write access to the .git
+            // folder. Need to use mechanism for installing new modules to gain
+            // access.
+            $remote = exec("$git rev-parse --abbrev-ref @{upstream} 2> " . GIT_DEPLOY_ERROR_DUMP);
+            if (preg_match('/^.*\/' . preg_quote($release['tag']) . '$/', $remote)) {
+              // Fetch latest upstream commit.
+              exec("$git fetch 2> " . GIT_DEPLOY_ERROR_DUMP);
+              $last_commit = exec("$git log -1 --pretty=format:%H " . escapeshellarg($remote) . ' 2> ' . GIT_DEPLOY_ERROR_DUMP);
+            }
+            else {
+              // If local does not track an upstream branch, find most recent
+              // matching remote branch.
+              exec("$git remote 2> " . GIT_DEPLOY_ERROR_DUMP, $remotes);
+              if (!empty($remotes)) {
+                if (in_array('origin', $remotes)) {
+                  // Only consider the origin remote, if it exists.
+                  exec("$git fetch origin 2> " . GIT_DEPLOY_ERROR_DUMP);
+                  $branch_pattern = "origin/$release[tag]";
+                }
+                else {
+                  // Fetch latest commits from all repositories.
+                  exec("$git fetch --all 2> " . GIT_DEPLOY_ERROR_DUMP);
+                  $branch_pattern = "*/$release[tag]";
+                }
+                // List matching branches by date in descending order.
+                exec("$git branch -r --sort=-creatordate --list --format='%(refname:short)' " . escapeshellarg($branch_pattern) . ' 2> ' . GIT_DEPLOY_ERROR_DUMP, $branches);
+                if (!empty($branches)) {
+                  $branch = reset($branches);
+                  $last_commit = exec("$git log -1 --pretty=format:%H " . escapeshellarg($branch) . ' 2> ' . GIT_DEPLOY_ERROR_DUMP);
+                }
+              }
+            }
+            // See if local branch contains latest commit.
+            exec("$git merge-base --is-ancestor " . escapeshellarg($last_commit) . ' HEAD 2> ' . GIT_DEPLOY_ERROR_DUMP, $output, $return_val);
+            // We still need to compare commit time to release time because this
+            // repository may have been cloned from a copy of the upstream
+            // repository. Allow a 12 hour time difference between release and
+            // last commit, because dev releases are packaged only twice a day.
+            // Add a 100-second buffer to account for packaging time.
+            if ($return_val === 0 && $project_info['datestamp'] + 43200 + 100 > $release['date']) {
+              $project_info['status'] = UpdateManagerInterface::CURRENT;
+            }
+          }
+        }
+      }
+    }
+  }
+}

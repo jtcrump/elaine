@@ -14,8 +14,13 @@ use Drupal\Core\Utility\Error;
 
 /**
  * Disables any extensions that are incompatible with the current core version.
+ *
+ * @deprecated in Drupal 8.8.4 and is removed from Drupal 9.0.0.
+ *
+ * @see https://www.drupal.org/node/3026100
  */
 function update_fix_compatibility() {
+  @trigger_error(__FUNCTION__ . '() is deprecated in Drupal 8.8.4 and will be removed before Drupal 9.0.0. There is no replacement. See https://www.drupal.org/node/3026100', E_USER_DEPRECATED);
   // Fix extension objects if the update is being done via Drush 8. In non-Drush
   // environments this will already be fixed by the UpdateKernel this point.
   UpdateKernel::fixSerializedExtensionObjects(\Drupal::getContainer());
@@ -306,9 +311,11 @@ function update_get_update_list() {
   $ret = ['system' => []];
 
   $modules = drupal_get_installed_schema_version(NULL, FALSE, TRUE);
+  /** @var \Drupal\Core\Extension\ExtensionList $extension_list */
+  $extension_list = \Drupal::service('extension.list.module');
   foreach ($modules as $module => $schema_version) {
     // Skip uninstalled and incompatible modules.
-    if ($schema_version == SCHEMA_UNINSTALLED || update_check_incompatibility($module)) {
+    if ($schema_version == SCHEMA_UNINSTALLED || $extension_list->checkIncompatibility($module)) {
       continue;
     }
     // Display a requirements error if the user somehow has a schema version
@@ -320,14 +327,6 @@ function update_get_update_list() {
     // Otherwise, get the list of updates defined by this module.
     $updates = drupal_get_schema_versions($module);
     if ($updates !== FALSE) {
-      // \Drupal::moduleHandler()->invoke() returns NULL for non-existing hooks,
-      // so if no updates are removed, it will == 0.
-      $last_removed = \Drupal::moduleHandler()->invoke($module, 'update_last_removed');
-      if ($schema_version < $last_removed) {
-        $ret[$module]['warning'] = '<em>' . $module . '</em> module cannot be updated. Its schema version is ' . $schema_version . '. Updates up to and including ' . $last_removed . ' have been removed in this release. In order to update <em>' . $module . '</em> module, you will first <a href="https://www.drupal.org/upgrade">need to upgrade</a> to the last version in which these updates were available.';
-        continue;
-      }
-
       foreach ($updates as $update) {
         if ($update == \Drupal::CORE_MINIMUM_SCHEMA_VERSION) {
           $ret[$module]['warning'] = '<em>' . $module . '</em> module cannot be updated. It contains an update numbered as ' . \Drupal::CORE_MINIMUM_SCHEMA_VERSION . ' which is reserved for the earliest installation of a module in Drupal ' . \Drupal::CORE_COMPATIBILITY . ', before any updates. In order to update <em>' . $module . '</em> module, you will need to install a version of the module with valid updates.';
@@ -607,7 +606,7 @@ function update_retrieve_dependencies() {
   $return = [];
   // Get a list of installed modules, arranged so that we invoke their hooks in
   // the same order that \Drupal::moduleHandler()->invokeAll() does.
-  foreach (\Drupal::keyValue('system.schema')->getAll() as $module => $schema) {
+  foreach (drupal_get_installed_schema_version(NULL, FALSE, TRUE) as $module => $schema) {
     if ($schema == SCHEMA_UNINSTALLED) {
       // Nothing to upgrade.
       continue;

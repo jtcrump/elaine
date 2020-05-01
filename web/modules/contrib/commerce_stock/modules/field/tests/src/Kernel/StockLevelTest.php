@@ -6,7 +6,9 @@ use Drupal\commerce\Context;
 use Drupal\commerce_product\Entity\Product;
 use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\commerce_stock\StockTransactionsInterface;
+use Drupal\commerce_stock_field\Plugin\Field\FieldType\StockLevel;
 use Drupal\commerce_stock_local\Entity\StockLocation;
+use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Tests\commerce_stock\Kernel\CommerceStockKernelTestBase;
 use Drupal\Tests\commerce_stock_local\Kernel\StockTransactionQueryTrait;
 
@@ -187,7 +189,7 @@ class StockLevelTest extends CommerceStockKernelTestBase {
    * Whether a wrong value is throwing.
    */
   public function testInvalidArgumentThrows() {
-    $this->setExpectedException(\InvalidArgumentException::class);
+    $this->expectException(\InvalidArgumentException::class);
     $this->variation->set('test_stock_level', 'FAIL');
   }
 
@@ -219,7 +221,23 @@ class StockLevelTest extends CommerceStockKernelTestBase {
     $this->assertEquals($mock_widget_values['user_id'], $transaction->related_uid);
     $this->assertEquals($mock_widget_values['unit_cost']['amount'], $transaction->unit_cost);
     $this->assertEquals($mock_widget_values['unit_cost']['currency_code'], $transaction->currency_code);
-    $this->assertTrue($mock_widget_values['stock_transaction_note'], $data['message']);
+    $this->assertEquals($mock_widget_values['stock_transaction_note'], $data['message']);
+  }
+
+  /**
+   * @covers ::generateSampleValue().
+   */
+  public function testSampeValueGenerator() {
+    $i = 0;
+    $FieldDefinition = $this->createMock(FieldDefinitionInterface::class);
+    while($i < 100) {
+      $sampleValue = StockLevel::generateSampleValue($FieldDefinition);
+      $value = $sampleValue['value'];
+      $this->assertTrue(is_float($value));
+      $this->assertTrue(is_float($value));
+      $this->assertTrue(999 <= $value && -999 >= $value);
+      $i++;
+    }
   }
 
 }

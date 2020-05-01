@@ -22,6 +22,7 @@ use Drupal\Tests\ConfigTestTrait;
 use Drupal\Tests\PhpunitCompatibilityTrait;
 use Drupal\Tests\RandomGeneratorTrait;
 use Drupal\Tests\TestRequirementsTrait;
+use Drupal\TestTools\Comparator\MarkupInterfaceComparator;
 use PHPUnit\Framework\Exception;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Reference;
@@ -237,6 +238,9 @@ abstract class KernelTestBase extends TestCase implements ServiceProviderInterfa
   protected function setUp() {
     parent::setUp();
 
+    // Allow tests to compare MarkupInterface objects via assertEquals().
+    $this->registerComparator(new MarkupInterfaceComparator());
+
     $this->root = static::getDrupalRoot();
     $this->initFileCache();
     $this->bootEnvironment();
@@ -274,6 +278,9 @@ abstract class KernelTestBase extends TestCase implements ServiceProviderInterfa
     $settings = [
       'hash_salt' => get_class($this),
       'file_public_path' => $this->siteDirectory . '/files',
+      // Skip the "path_alias" schema check for kernel tests, since they do not
+      // rely on the full schema being installed.
+      'system.path_alias_schema_check' => FALSE,
       // Disable Twig template caching/dumping.
       'twig_cache' => FALSE,
       // @see \Drupal\KernelTests\KernelTestBase::register()
@@ -341,11 +348,12 @@ abstract class KernelTestBase extends TestCase implements ServiceProviderInterfa
     // Bootstrap the kernel. Do not use createFromRequest() to retain Settings.
     $kernel = new DrupalKernel('testing', $this->classLoader, FALSE);
     $kernel->setSitePath($this->siteDirectory);
-    // Boot a new one-time container from scratch. Ensure to set the module list
-    // upfront to avoid a subsequent rebuild.
-    if ($modules && $extensions = $this->getExtensionsForModules($modules)) {
-      $kernel->updateModules($extensions, $extensions);
-    }
+    // Boot a new one-time container from scratch. Set the module list upfront
+    // to avoid a subsequent rebuild or setting the kernel into the
+    // pre-installer mode.
+    $extensions = $modules ? $this->getExtensionsForModules($modules) : [];
+    $kernel->updateModules($extensions, $extensions);
+
     // DrupalKernel::boot() is not sufficient as it does not invoke preHandle(),
     // which is required to initialize legacy global variables.
     $request = Request::create('/');
@@ -610,9 +618,9 @@ abstract class KernelTestBase extends TestCase implements ServiceProviderInterfa
 
     // Remove all prefixed tables.
     $original_connection_info = Database::getConnectionInfo('simpletest_original_default');
-    $original_prefix = $original_connection_info['default']['prefix']['default'];
+    $original_prefix = $original_connection_info['default']['prefix']['default'] ?? NULL;
     $test_connection_info = Database::getConnectionInfo('default');
-    $test_prefix = $test_connection_info['default']['prefix']['default'];
+    $test_prefix = $test_connection_info['default']['prefix']['default'] ?? NULL;
     if ($original_prefix != $test_prefix) {
       $tables = Database::getConnection()->schema()->findTables('%');
       foreach ($tables as $table) {

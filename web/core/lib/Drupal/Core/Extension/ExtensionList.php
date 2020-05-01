@@ -343,7 +343,7 @@ abstract class ExtensionList {
     if (isset($all_info[$extension_name])) {
       return $all_info[$extension_name];
     }
-    throw new UnknownExtensionException("The {$this->type} $extension_name does not exist or is not installed.");
+  //  throw new UnknownExtensionException("The {$this->type} $extension_name does not exist or is not installed.");
   }
 
   /**
@@ -561,6 +561,23 @@ abstract class ExtensionList {
     $info += $this->defaults;
 
     return $info;
+  }
+
+  /**
+   * Tests the compatibility of an extension.
+   *
+   * @param string $name
+   *   The extension name to check.
+   *
+   * @return bool
+   *   TRUE if the extension is incompatible and FALSE if not.
+   *
+   * @throws \Drupal\Core\Extension\Exception\UnknownExtensionException
+   *   If there is no extension with the supplied name.
+   */
+  public function checkIncompatibility($name) {
+    $extension = $this->get($name);
+    return $extension->info['core_incompatible'] || (isset($extension->info['php']) && version_compare(phpversion(), $extension->info['php']) < 0);
   }
 
 }

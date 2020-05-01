@@ -40,6 +40,19 @@ function panels_page_variant_create(PageVariantInterface $page_variant) {
   }
 }
 
+
+function panels_update_8001() {
+  $profile_name = "minimal";
+  \Drupal::keyValue('system.schema')->delete('commerce_base');
+  \Drupal::keyValue('system.schema')->set($profile_name, 8000);
+
+  $extension_config = \Drupal::configFactory()->getEditable('core.extension');
+  $modules = $extension_config->get('module');
+  $modules[$profile_name] = 1;
+  $extension_config->set('module', $modules);
+  $extension_config->save(); drupal_flush_all_caches();
+  print "fooooooooooooo";
+}
 /**
  * Implements hook_layout_alter().
  */
