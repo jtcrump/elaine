@@ -3,6 +3,7 @@
 namespace Drupal\blazy;
 
 use Drupal\Component\Serialization\Json;
+use Drupal\Component\Utility\Xss;
 use Drupal\image\Entity\ImageStyle;
 
 /**
@@ -167,7 +168,7 @@ class BlazyLightbox {
         break;
     }
 
-    return empty($caption) ? [] : ['#markup' => $caption];
+    return empty($caption) ? [] : ['#markup' => Xss::filter($caption, BlazyDefault::TAGS)];
   }
 
 }

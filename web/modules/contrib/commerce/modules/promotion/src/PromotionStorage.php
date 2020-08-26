@@ -91,7 +91,7 @@ class PromotionStorage extends CommerceContentEntityStorage implements Promotion
   /**
    * {@inheritdoc}
    */
-  public function loadAvailable(OrderInterface $order) {
+  public function loadAvailable(OrderInterface $order, array $offer_ids = []) {
     $date = $order->getCalculationDate()->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
 
     $query = $this->getQuery();
@@ -104,6 +104,9 @@ class PromotionStorage extends CommerceContentEntityStorage implements Promotion
       ->condition('start_date', $date, '<=')
       ->condition('status', TRUE)
       ->condition($or_condition);
+    if ($offer_ids) {
+      $query->condition('offer.target_plugin_id', $offer_ids, 'IN');
+    }
     // Only load promotions without coupons. Promotions with coupons are loaded
     // coupon-first in a different process.
     $query->notExists('coupons');
@@ -113,7 +116,7 @@ class PromotionStorage extends CommerceContentEntityStorage implements Promotion
     }
 
     $promotions = $this->loadMultiple($result);
-    // Remove any promotions that have hit their usage limit.
+    // Remove any promotions that do not have a usage limit.
     $promotions_with_usage_limits = array_filter($promotions, function ($promotion) {
       /** @var \Drupal\commerce_promotion\Entity\PromotionInterface $promotion */
       return !empty($promotion->getUsageLimit());
@@ -123,6 +126,27 @@ class PromotionStorage extends CommerceContentEntityStorage implements Promotion
       /** @var \Drupal\commerce_promotion\Entity\PromotionInterface $promotion */
       if ($promotion->getUsageLimit() <= $usages[$promotion_id]) {
         unset($promotions[$promotion_id]);
+      }
+    }
+    // Remove any promotions that do not have a customer usage limit.
+    $promotions_with_customer_usage_limits = array_filter($promotions, function ($promotion) {
+      /** @var \Drupal\commerce_promotion\Entity\PromotionInterface $promotion */
+      return !empty($promotion->getCustomerUsageLimit());
+    });
+    // Email is required for promotions that have customer usage limits.
+    $email = $order->getEmail();
+    if (!$email) {
+      foreach ($promotions_with_customer_usage_limits as $promotion_id => $promotion) {
+        unset($promotions[$promotion_id]);
+      }
+    }
+    else {
+      $customer_usages = $this->usage->loadMultiple($promotions_with_customer_usage_limits, $email);
+      foreach ($promotions_with_customer_usage_limits as $promotion_id => $promotion) {
+        /** @var \Drupal\commerce_promotion\Entity\PromotionInterface $promotion */
+        if ($promotion->getCustomerUsageLimit() <= $customer_usages[$promotion_id]) {
+          unset($promotions[$promotion_id]);
+        }
       }
     }
     // Sort the remaining promotions.

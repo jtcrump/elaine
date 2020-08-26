@@ -183,6 +183,9 @@ class OrderItem extends CommerceContentEntityBase implements OrderItemInterface 
    */
   public function addAdjustment(Adjustment $adjustment) {
     $this->get('adjustments')->appendItem($adjustment);
+    if ($this->getOrder()) {
+      $this->getOrder()->recalculateTotalPrice();
+    }
     return $this;
   }
 
@@ -191,6 +194,9 @@ class OrderItem extends CommerceContentEntityBase implements OrderItemInterface 
    */
   public function removeAdjustment(Adjustment $adjustment) {
     $this->get('adjustments')->removeAdjustment($adjustment);
+    if ($this->getOrder()) {
+      $this->getOrder()->recalculateTotalPrice();
+    }
     return $this;
   }
 
@@ -351,6 +357,7 @@ class OrderItem extends CommerceContentEntityBase implements OrderItemInterface 
       ->setLabel(t('Purchased entity'))
       ->setDescription(t('The purchased entity.'))
       ->setRequired(TRUE)
+      ->addConstraint('PurchasedEntityAvailable')
       ->setDisplayOptions('form', [
         'type' => 'entity_reference_autocomplete',
         'weight' => -1,
@@ -362,6 +369,13 @@ class OrderItem extends CommerceContentEntityBase implements OrderItemInterface 
       ])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE);
+
+    /** @var \Drupal\commerce\PurchasableEntityTypeRepositoryInterface $purchasable_entity_type_repository */
+    $purchasable_entity_type_repository = \Drupal::service('commerce.purchasable_entity_type_repository');
+    $default_purchasable_entity_type = $purchasable_entity_type_repository->getDefaultPurchasableEntityType();
+    if ($default_purchasable_entity_type) {
+      $fields['purchased_entity']->setSetting('target_type', $default_purchasable_entity_type->id());
+    }
 
     $fields['title'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Title'))

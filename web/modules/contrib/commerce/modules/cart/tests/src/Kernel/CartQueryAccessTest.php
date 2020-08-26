@@ -3,9 +3,8 @@
 namespace Drupal\Tests\commerce_cart\Kernel;
 
 use Drupal\commerce_order\OrderQueryAccessHandler;
+use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\entity\QueryAccess\Condition;
-use Drupal\Tests\commerce_cart\Traits\CartManagerTestTrait;
-use Drupal\Tests\commerce_order\Kernel\OrderKernelTestBase;
 
 /**
  * Tests query access filtering for carts.
@@ -13,9 +12,7 @@ use Drupal\Tests\commerce_order\Kernel\OrderKernelTestBase;
  * @coversDefaultClass \Drupal\commerce_cart\EventSubscriber\QueryAccessSubscriber
  * @group commerce
  */
-class CartQueryAccessTest extends OrderKernelTestBase {
-
-  use CartManagerTestTrait;
+class CartQueryAccessTest extends CartKernelTestBase {
 
   /**
    * The query access handler.
@@ -23,13 +20,6 @@ class CartQueryAccessTest extends OrderKernelTestBase {
    * @var \Drupal\commerce_order\OrderQueryAccessHandler
    */
   protected $handler;
-
-  /**
-   * The cart provider.
-   *
-   * @var \Drupal\commerce_cart\CartProviderInterface
-   */
-  protected $cartProvider;
 
   /**
    * {@inheritdoc}
@@ -40,11 +30,9 @@ class CartQueryAccessTest extends OrderKernelTestBase {
     // Create uid: 1 here so that it's skipped in test cases.
     $admin_user = $this->createUser();
 
-    $this->installCommerceCart();
     $entity_type_manager = $this->container->get('entity_type.manager');
     $entity_type = $entity_type_manager->getDefinition('commerce_order');
     $this->handler = OrderQueryAccessHandler::createInstance($this->container, $entity_type);
-    $this->cartProvider = $this->container->get('commerce_cart.cart_provider');
   }
 
   /**
@@ -61,7 +49,8 @@ class CartQueryAccessTest extends OrderKernelTestBase {
     }
 
     // Anonymous user with no access other than to their own carts.
-    $cart = $this->cartProvider->createCart('default', $this->store);
+    $anon_user = new AnonymousUserSession();
+    $cart = $this->cartProvider->createCart('default', $this->store, $anon_user);
     $conditions = $this->handler->getConditions('view');
     $expected_conditions = [
       new Condition('order_id', [$cart->id()]),
@@ -73,8 +62,17 @@ class CartQueryAccessTest extends OrderKernelTestBase {
 
     // Confirm that finalized carts are also allowed.
     $this->cartProvider->finalizeCart($cart);
-    $another_cart = $this->cartProvider->createCart('default', $this->store);
-    $conditions = $this->handler->getConditions('view');
+    $conditions = $this->handler->getConditions('view', $anon_user);
+    $this->assertEquals(1, $conditions->count());
+    $this->assertEquals(['user.permissions'], $conditions->getCacheContexts());
+    $expected_conditions = [
+      new Condition('order_id', [$cart->id()]),
+    ];
+    $this->assertEquals($expected_conditions, $conditions->getConditions());
+
+    // Create another cart.
+    $another_cart = $this->cartProvider->createCart('default', $this->store, $anon_user);
+    $conditions = $this->handler->getConditions('view', $anon_user);
     $expected_conditions = [
       new Condition('order_id', [$another_cart->id(), $cart->id()]),
     ];

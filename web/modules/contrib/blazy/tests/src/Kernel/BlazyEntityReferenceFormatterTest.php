@@ -9,7 +9,6 @@ use Drupal\Tests\blazy\Traits\BlazyKernelTestTrait;
 /**
  * Tests the Blazy entity reference file formatter.
  *
- * @todo this test was created May 2017, and things broken now at Drupal 8.6+.
  * @coversDefaultClass \Drupal\blazy_test\Plugin\Field\FieldFormatter\BlazyTestEntityReferenceFormatterTest
  * @group blazy
  */
@@ -21,10 +20,9 @@ class BlazyEntityReferenceFormatterTest extends KernelTestBase {
    * Set to TRUE to strict check all configuration saved.
    *
    * @var bool
-   * @todo remove once schema issue fixed for: view_mode, current_view_mode.
    * @see \Drupal\Core\Config\Development\ConfigSchemaChecker
    */
-  protected $strictConfigSchema = FALSE;
+  protected $strictConfigSchema = TRUE;
 
   /**
    * Modules to enable.
@@ -132,7 +130,7 @@ class BlazyEntityReferenceFormatterTest extends KernelTestBase {
     $this->referencingEntity = $this->createReferencingEntity();
 
     // Verify the un-accessible item still exists.
-    $this->assertEquals($this->referencingEntity->{$field_name}->target_id, $this->referencedEntity->id(), format_string('The un-accessible item still exists after @name formatter was executed.', ['@name' => $plugin_id]));
+    $this->assertEquals($this->referencingEntity->{$field_name}->target_id, $this->referencedEntity->id(), "The un-accessible item still exists after $plugin_id formatter was executed.");
 
     $component = $this->referencingDisplay->getComponent($this->entityFieldName);
     $this->assertEquals($this->entityPluginId, $component['type']);

@@ -38,9 +38,28 @@ class PromotionForm extends ContentEntityForm {
     $form = parent::form($form, $form_state);
 
     $form['#tree'] = TRUE;
+    // By default an offer is preselected on the add form because the field
+    // is required. Select an empty value instead, to force the user to choose.
+    if ($this->operation == 'add' && $this->entity->get('offer')->isEmpty()) {
+      if (!empty($form['offer']['widget'][0]['target_plugin_id'])) {
+        $form['offer']['widget'][0]['target_plugin_id']['#empty_value'] = '';
+        $form['offer']['widget'][0]['target_plugin_id']['#default_value'] = '';
+        if (empty($form_state->getValue(['offer', 0, 'target_plugin_id']))) {
+          unset($form['offer']['widget'][0]['target_plugin_configuration']);
+        }
+      }
+    }
+
+    $translating = !$this->isDefaultFormLangcode($form_state);
+    $hide_non_translatable_fields = $this->entity->isDefaultTranslationAffectedOnly();
+    // The second column is empty when translating with non-translatable
+    // fields hidden, so there's no reason to add it.
+    if ($translating && $hide_non_translatable_fields) {
+      return $form;
+    }
+
     $form['#theme'] = ['commerce_promotion_form'];
     $form['#attached']['library'][] = 'commerce_promotion/form';
-
     $form['advanced'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['entity-meta']],
@@ -80,21 +99,12 @@ class PromotionForm extends ContentEntityForm {
       'start_date' => 'date_details',
       'end_date' => 'date_details',
       'usage_limit' => 'usage_details',
+      'usage_limit_customer' => 'usage_details',
       'compatibility' => 'compatibility_details',
     ];
     foreach ($field_details_mapping as $field => $group) {
       if (isset($form[$field])) {
         $form[$field]['#group'] = $group;
-      }
-    }
-
-    // By default an offer is preselected on the add form because the field
-    // is required. Select an empty value instead, to force the user to choose.
-    if ($this->operation == 'add' && !empty($form['offer']['widget'][0]['target_plugin_id'])) {
-      $form['offer']['widget'][0]['target_plugin_id']['#empty_value'] = '';
-      $form['offer']['widget'][0]['target_plugin_id']['#default_value'] = '';
-      if (!$form_state->isRebuilding()) {
-        unset($form['offer']['widget'][0]['target_plugin_configuration']);
       }
     }
 

@@ -52,13 +52,6 @@ abstract class BlazyManagerBase implements BlazyManagerInterface {
   protected $cache;
 
   /**
-   * The supported lightboxes.
-   *
-   * @var array
-   */
-  protected $lightboxes = [];
-
-  /**
    * Constructs a BlazyManager object.
    */
   public function __construct(EntityTypeManagerInterface $entity_type_manager, ModuleHandlerInterface $module_handler, RendererInterface $renderer, ConfigFactoryInterface $config_factory, CacheBackendInterface $cache) {
@@ -219,19 +212,29 @@ abstract class BlazyManagerBase implements BlazyManagerInterface {
   }
 
   /**
+   * Returns the common settings inherited down to each item.
+   */
+  public function getCommonSettings() {
+    return array_intersect_key($this->configLoad('', 'blazy.settings'), BlazyDefault::uiSettings());
+  }
+
+  /**
    * Gets the supported lightboxes.
    *
    * @return array
    *   The supported lightboxes.
    */
   public function getLightboxes() {
-    $boxes = $this->lightboxes + ['colorbox', 'photobox'];
-
     $lightboxes = [];
-    foreach (array_unique($boxes) as $lightbox) {
+    foreach (['colorbox', 'photobox'] as $lightbox) {
       if (function_exists($lightbox . '_theme')) {
         $lightboxes[] = $lightbox;
       }
+    }
+
+    // Checks only needed for tests.
+    if (\Drupal::hasService('app.root') && is_file(\Drupal::root() . '/libraries/photobox/photobox/jquery.photobox.js')) {
+      $lightboxes[] = 'photobox';
     }
 
     $this->moduleHandler->alter('blazy_lightboxes', $lightboxes);
@@ -239,13 +242,24 @@ abstract class BlazyManagerBase implements BlazyManagerInterface {
   }
 
   /**
-   * Sets the lightboxes.
-   *
-   * @param string $lightbox
-   *   The lightbox name, expected to be the module name.
+   * Return the cache metadata common for all blazy-related modules.
    */
-  public function setLightboxes($lightbox) {
-    $this->lightboxes[] = $lightbox;
+  public function getCacheMetadata(array $build = []) {
+    $settings          = $build['settings'];
+    $max_age           = $this->configLoad('cache.page.max_age', 'system.performance');
+    $max_age           = empty($settings['cache']) ? $max_age : $settings['cache'];
+    $id                = isset($settings['id']) ? $settings['id'] : Blazy::getHtmlId($settings['namespace']);
+    $suffixes[]        = empty($settings['count']) ? count(array_filter($settings)) : $settings['count'];
+    $cache['tags']     = Cache::buildTags($settings['namespace'] . ':' . $id, $suffixes, '.');
+    $cache['contexts'] = ['languages'];
+    $cache['max-age']  = $max_age;
+    $cache['keys']     = isset($settings['cache_metadata']['keys']) ? $settings['cache_metadata']['keys'] : [$id];
+
+    if (!empty($settings['cache_tags'])) {
+      $cache['tags'] = Cache::mergeTags($cache['tags'], $settings['cache_tags']);
+    }
+
+    return $cache;
   }
 
 }

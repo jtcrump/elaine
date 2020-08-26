@@ -117,8 +117,6 @@ class BlazyUnitTest extends UnitTestCase {
    *
    * @param array $settings
    *   The settings being tested.
-   * @param object $item
-   *   Whether to provide image item, or not.
    * @param bool $expected_image
    *   Whether to expect an image, or not.
    * @param bool $expected_iframe
@@ -130,11 +128,10 @@ class BlazyUnitTest extends UnitTestCase {
    * @covers \Drupal\blazy\Dejavu\BlazyDefault::entitySettings
    * @dataProvider providerBuildAttributes
    */
-  public function testBuildAttributes(array $settings, $item, $expected_image, $expected_iframe) {
+  public function testBuildAttributes(array $settings, $expected_image, $expected_iframe) {
     $variables = ['attributes' => []];
     $build     = $this->data;
-    $settings  = array_merge($build['settings'], $settings);
-    $settings += BlazyDefault::itemSettings();
+    $settings  = array_merge($build['settings'], $settings) + BlazyDefault::itemSettings();
 
     $settings['breakpoints']     = [];
     $settings['blazy']           = TRUE;
@@ -146,7 +143,7 @@ class BlazyUnitTest extends UnitTestCase {
       $settings = array_merge(BlazyDefault::entitySettings(), $settings);
     }
 
-    $variables['element']['#item'] = $item == TRUE ? $this->testItem : NULL;
+    $variables['element']['#item'] = $this->testItem;
     $variables['element']['#settings'] = $settings;
 
     Blazy::buildAttributes($variables);
@@ -171,7 +168,6 @@ class BlazyUnitTest extends UnitTestCase {
         'background' => FALSE,
         'uri' => '',
       ],
-      TRUE,
       FALSE,
       FALSE,
     ];
@@ -182,7 +178,6 @@ class BlazyUnitTest extends UnitTestCase {
         'uri' => $uri,
       ],
       TRUE,
-      TRUE,
       FALSE,
     ];
     $data[] = [
@@ -190,7 +185,6 @@ class BlazyUnitTest extends UnitTestCase {
         'background' => TRUE,
         'uri' => $uri,
       ],
-      TRUE,
       FALSE,
       FALSE,
     ];
@@ -203,7 +197,6 @@ class BlazyUnitTest extends UnitTestCase {
         'height' => 360,
         'uri' => $uri,
       ],
-      TRUE,
       TRUE,
       FALSE,
     ];
@@ -218,7 +211,6 @@ class BlazyUnitTest extends UnitTestCase {
         'type' => 'video',
         'uri' => $uri,
       ],
-      TRUE,
       TRUE,
       TRUE,
     ];

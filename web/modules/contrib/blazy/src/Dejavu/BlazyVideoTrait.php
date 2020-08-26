@@ -193,6 +193,7 @@ trait BlazyVideoTrait {
       }
     }
 
+    $content = [];
     if ($settings['source_field'] && $media->hasField($settings['source_field'])) {
       $value     = $media->{$settings['source_field']}->getValue();
       $input_url = isset($value[0]['uri']) ? $value[0]['uri'] : (isset($value[0]['value']) ? $value[0]['value'] : '');
@@ -212,7 +213,6 @@ trait BlazyVideoTrait {
 
       // Do not proceed if it has type, already managed by theme_blazy().
       // Supports other Media entities: Facebook, Instagram, Twitter, etc.
-      $content = [];
       if (empty($settings['type']) && ($build = BlazyMedia::build($media, $settings))) {
         $content[] = $build;
       }

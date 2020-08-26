@@ -51,7 +51,12 @@ class SimpleStockLevelFormatter extends FormatterBase implements ContainerFactor
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+  public static function create(
+    ContainerInterface $container,
+    array $configuration,
+    $plugin_id,
+    $plugin_definition
+  ) {
     return new static(
       $plugin_id,
       $plugin_definition,
@@ -86,7 +91,6 @@ class SimpleStockLevelFormatter extends FormatterBase implements ContainerFactor
       '#type' => 'html_tag',
       '#tag' => 'p',
       '#value' => $level,
-      '#cache' => ['max-age' => 2],
     ];
 
     return $elements;

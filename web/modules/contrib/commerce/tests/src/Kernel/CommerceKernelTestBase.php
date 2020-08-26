@@ -36,6 +36,7 @@ abstract class CommerceKernelTestBase extends EntityKernelTestBase {
     'commerce_price',
     'commerce_store',
     'path',
+    'path_alias',
   ];
 
   /**
@@ -56,9 +57,7 @@ abstract class CommerceKernelTestBase extends EntityKernelTestBase {
     $factory->register(new NumberComparator());
     $factory->register(new PriceComparator());
 
-    if (\Drupal::entityTypeManager()->hasDefinition('path_alias')) {
-      $this->installEntitySchema('path_alias');
-    }
+    $this->installEntitySchema('path_alias');
     $this->installEntitySchema('commerce_currency');
     $this->installEntitySchema('commerce_store');
     $this->installConfig(['commerce_store']);

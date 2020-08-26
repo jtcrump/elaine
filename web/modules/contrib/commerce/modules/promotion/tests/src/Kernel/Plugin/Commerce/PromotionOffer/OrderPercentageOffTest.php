@@ -76,6 +76,7 @@ class OrderPercentageOffTest extends OrderKernelTestBase {
     // Starts now, enabled. No end time.
     $promotion = Promotion::create([
       'name' => 'Promotion 1',
+      'display_name' => '10% off',
       'order_types' => [$this->order->bundle()],
       'stores' => [$this->store->id()],
       'status' => TRUE,
@@ -99,11 +100,45 @@ class OrderPercentageOffTest extends OrderKernelTestBase {
 
     $this->assertEquals(0, count($this->order->getAdjustments()));
     $this->assertEquals(1, count($order_item->getAdjustments()));
-    $this->assertEquals(new Price('40.00', 'USD'), $order_item->getTotalPrice());
-    $this->assertEquals(new Price('36.00', 'USD'), $order_item->getAdjustedTotalPrice());
+    $this->assertEquals('10% off', $adjustment->getLabel());
     $this->assertEquals(new Price('-4.00', 'USD'), $adjustment->getAmount());
     $this->assertEquals('0.1', $adjustment->getPercentage());
+    $this->assertEquals(new Price('40.00', 'USD'), $order_item->getTotalPrice());
+    $this->assertEquals(new Price('36.00', 'USD'), $order_item->getAdjustedTotalPrice());
     $this->assertEquals(new Price('36.00', 'USD'), $this->order->getTotalPrice());
+
+    // Test multiple promotions.
+    // Starts now, enabled. No end time.
+    $another_promotion = Promotion::create([
+      'name' => 'Promotion 2',
+      'display_name' => '100% off',
+      'order_types' => [$this->order->bundle()],
+      'stores' => [$this->store->id()],
+      'status' => TRUE,
+      'offer' => [
+        'target_plugin_id' => 'order_percentage_off',
+        'target_plugin_configuration' => [
+          'percentage' => '1',
+        ],
+      ],
+    ]);
+    $another_promotion->save();
+    $this->container->get('commerce_order.order_refresh')->refresh($this->order);
+    $order_items = $this->order->getItems();
+    $order_item = reset($order_items);
+    $this->order->recalculateTotalPrice();
+
+    $order_item_adjustments = $order_item->getAdjustments();
+    $this->assertEquals(2, count($order_item_adjustments));
+    $this->assertEquals('10% off', $order_item_adjustments[0]->getLabel());
+    $this->assertEquals(new Price('-4.00', 'USD'), $order_item_adjustments[0]->getAmount());
+    $this->assertEquals('100% off', $order_item_adjustments[1]->getLabel());
+    $this->assertEquals(new Price('-36', 'USD'), $order_item_adjustments[1]->getAmount());
+    $this->assertEquals('0.1', $order_item_adjustments[0]->getPercentage());
+    $this->assertEquals('1', $order_item_adjustments[1]->getPercentage());
+    $this->assertEquals(new Price('40.00', 'USD'), $order_item->getTotalPrice());
+    $this->assertEquals(new Price('0', 'USD'), $order_item->getAdjustedTotalPrice());
+    $this->assertEquals(new Price('0', 'USD'), $this->order->getTotalPrice());
   }
 
 }

@@ -139,11 +139,12 @@ abstract class CommerceWebDriverTestBase extends WebDriverTestBase {
    */
   protected function assertRenderedAddress(array $address, $container = 'profile') {
     $page = $this->getSession()->getPage();
+    $address_text = $page->find('css', 'p.address')->getText();
     foreach ($address as $property => $value) {
-      if ($property == 'country_code') {
+      if ($property === 'country_code') {
         $value = $this->countryList[$value];
       }
-      $this->assertContains($value, $page->find('css', 'p.address')->getText());
+      $this->assertStringContainsString($value, $address_text);
       $this->assertSession()->fieldNotExists($container . "[address][0][address][$property]");
     }
     $this->assertSession()->fieldNotExists($container . '[copy_to_address_book]');
