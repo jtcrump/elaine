@@ -84,7 +84,7 @@ function blazy_test_library_info_alter(array &$libraries, $extension) {
     return;
   }
 
-  $path = DRUPAL_ROOT . '/libraries/blazy/blazy.min.js';
+  $path = \Drupal::root() . '/libraries/blazy/blazy.min.js';
   if (!is_file($path)) {
     $libraries['blazy']['js'] = ['https://cdn.jsdelivr.net/blazy/latest/blazy.min.js' => ['type' => 'external', 'weight' => -4]];
     unset($libraries['blazy']['js']['/libraries/blazy/blazy.min.js']);
@@ -101,4 +101,3 @@ if (!function_exists('token_theme')) {
   }
 
 }
-

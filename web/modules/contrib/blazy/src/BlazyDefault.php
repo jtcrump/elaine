@@ -15,6 +15,11 @@ class BlazyDefault {
   private static $breakpoints = ['xs', 'sm', 'md', 'lg', 'xl'];
 
   /**
+   * Defines constant for the supported text tags.
+   */
+  const TAGS = ['a', 'em', 'strong', 'h2', 'p', 'span', 'ul', 'ol', 'li'];
+
+  /**
    * The current class instance.
    *
    * @var self
@@ -29,17 +34,9 @@ class BlazyDefault {
   private static $alterableSettings;
 
   /**
-   * Prevents this object from being constructed.
-   */
-  private function __construct() {
-    // Do nothing.
-  }
-
-  /**
    * Returns the static instance of this class.
    */
   public static function getInstance() {
-
     if (is_null(self::$instance)) {
       self::$instance = new BlazyDefault();
     }
@@ -152,18 +149,37 @@ class BlazyDefault {
   }
 
   /**
+   * Returns sensible default options common for Views lacking of UI.
+   */
+  public static function lazySettings() {
+    return [
+      'blazy' => TRUE,
+      'lazy'  => 'blazy',
+      'ratio' => 'fluid',
+    ];
+  }
+
+  /**
    * Returns sensible default options common for entities lacking of UI.
    */
   public static function entitySettings() {
     return [
-      'blazy'        => TRUE,
       'iframe_lazy'  => TRUE,
-      'lazy'         => 'blazy',
       'media_switch' => 'media',
-      'ratio'        => 'fluid',
       'rendered'     => FALSE,
       'view_mode'    => 'default',
       '_detached'    => TRUE,
+    ] + self::lazySettings();
+  }
+
+  /**
+   * Returns shared global form settings which should be consumed at formatters.
+   */
+  public static function uiSettings() {
+    return [
+      'one_pixel'        => TRUE,
+      'responsive_image' => FALSE,
+      'theme_hook_image' => 'blazy',
     ];
   }
 
@@ -173,12 +189,15 @@ class BlazyDefault {
   public static function itemSettings() {
     return [
       'blazy_data'     => [],
+      'classes'        => [],
       'content_url'    => '',
       'delta'          => 0,
       'embed_url'      => '',
+      'entity_type_id' => '',
       'extension'      => '',
       'icon'           => '',
       'image_url'      => '',
+      'id'             => '',
       'item_id'        => 'blazy',
       'lazy_attribute' => 'src',
       'lazy_class'     => 'b-lazy',
@@ -192,7 +211,35 @@ class BlazyDefault {
       'use_media'      => FALSE,
       'height'         => NULL,
       'width'          => NULL,
-    ] + self::imageSettings();
+    ] + self::imageSettings() + self::uiSettings();
+  }
+
+  /**
+   * Returns blazy theme properties, its image and container attributes.
+   *
+   * The reserved attributes mentioned here might be instantiated as an
+   * instanceof \Drupal\Core\Template\Attribute before entering Blazy.
+   */
+  public static function themeProperties() {
+    return [
+      'attributes',
+      'captions',
+      'image',
+      'item',
+      'item_attributes',
+      'settings',
+      'url',
+    ];
+  }
+
+  /**
+   * Returns additional/ optional blazy theme attributes.
+   *
+   * The attributes mentioned here are only instantiated at theme_blazy() and
+   * might be an empty array, not instanceof \Drupal\Core\Template\Attribute.
+   */
+  public static function themeAttributes() {
+    return ['caption', 'media', 'url', 'wrapper'];
   }
 
 }

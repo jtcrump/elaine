@@ -53,8 +53,9 @@ abstract class BlazyAdminFormatterBase extends BlazyAdminBase {
   /**
    * Return the field formatter settings summary.
    *
-   * @deprecated: To remove for self::getSettingsSummary() post full release so
-   * to avoid unpredictable settings, and complication with form elements.
+   * @deprecated in blazy:8.x-1.0 and is removed from blazy:8.x-2.0. Use
+   *   self::getSettingsSummary() instead.
+   * @see https://www.drupal.org/node/3103018
    */
   public function settingsSummary($plugin, $definition = []) {
     $definition = isset($definition) ? $definition : $plugin->getScopedFormElements();

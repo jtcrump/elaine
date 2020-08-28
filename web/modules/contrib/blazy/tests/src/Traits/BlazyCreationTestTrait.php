@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\blazy\Traits;
 
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\Entity\EntityViewDisplay;
 use Drupal\node\Entity\NodeType;
@@ -501,7 +502,7 @@ trait BlazyCreationTestTrait {
    * Returns path to the stored image location.
    */
   protected function getImagePath($is_dir = FALSE) {
-    $path            = \Drupal::root() . '/sites/default/files/simpletest/' . $this->testPluginId;
+    $path            = $this->root . '/sites/default/files/simpletest/' . $this->testPluginId;
     $item            = $this->createDummyImage();
     $uri             = ($entity = $item->entity) && empty($item->uri) ? $entity->getFileUri() : $item->uri;
     $this->dummyUri  = $uri;
@@ -518,14 +519,14 @@ trait BlazyCreationTestTrait {
    * Returns the created image file.
    */
   protected function createDummyImage($name = '', $source = '') {
-    $path   = \Drupal::root() . '/sites/default/files/simpletest/' . $this->testPluginId;
+    $path   = $this->root . '/sites/default/files/simpletest/' . $this->testPluginId;
     $name   = empty($name) ? $this->testPluginId . '.png' : $name;
-    $source = empty($source) ? \Drupal::root() . '/core/misc/druplicon.png' : $source;
+    $source = empty($source) ? $this->root . '/core/misc/druplicon.png' : $source;
     $uri    = $path . '/' . $name;
 
     if (!is_file($uri)) {
-      file_prepare_directory($path, FILE_CREATE_DIRECTORY);
-      file_unmanaged_copy($source, $uri, FILE_EXISTS_REPLACE);
+      $this->prepareTestDirectory();
+      $this->fileSystem->saveData($source, $uri, FileSystemInterface::EXISTS_REPLACE);
     }
 
     $uri = 'public://simpletest/' . $this->testPluginId . '/' . $name;
@@ -539,6 +540,14 @@ trait BlazyCreationTestTrait {
     $item->save();
 
     return $item;
+  }
+
+  /**
+   * Prepares test directory to store screenshots, or images.
+   */
+  protected function prepareTestDirectory() {
+    $this->testDirPath = $this->root . '/sites/default/files/simpletest/' . $this->testPluginId;
+    $this->fileSystem->prepareDirectory($this->testDirPath, FileSystemInterface::CREATE_DIRECTORY);
   }
 
 }

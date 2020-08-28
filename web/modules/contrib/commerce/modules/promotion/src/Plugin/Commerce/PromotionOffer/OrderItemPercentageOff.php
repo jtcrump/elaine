@@ -41,10 +41,19 @@ class OrderItemPercentageOff extends OrderItemPromotionOfferBase {
     }
     $adjustment_amount = $this->rounder->round($adjustment_amount);
 
+    $order = $order_item->getOrder();
+    if ($adjustment_amount->greaterThan($order->getTotalPrice())) {
+      $adjustment_amount = $order->getTotalPrice();
+    }
+
+    // Skip applying the promotion if there's no amount to discount.
+    if ($adjustment_amount->isZero()) {
+      return;
+    }
+
     $order_item->addAdjustment(new Adjustment([
       'type' => 'promotion',
-      // @todo Change to label from UI when added in #2770731.
-      'label' => t('Discount'),
+      'label' => $promotion->getDisplayName() ?: $this->t('Discount'),
       'amount' => $adjustment_amount->multiply('-1'),
       'percentage' => $percentage,
       'source_id' => $promotion->id(),

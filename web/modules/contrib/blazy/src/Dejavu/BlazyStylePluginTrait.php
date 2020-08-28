@@ -11,20 +11,6 @@ use Drupal\Component\Utility\Html;
 trait BlazyStylePluginTrait {
 
   /**
-   * The blazy manager service.
-   *
-   * @var \Drupal\blazy\BlazyManagerInterface
-   */
-  protected $blazyManager;
-
-  /**
-   * Returns the blazy manager.
-   */
-  public function blazyManager() {
-    return $this->blazyManager;
-  }
-
-  /**
    * Returns available fields for select options.
    */
   public function getDefinedFieldOptions($definitions = []) {
@@ -285,20 +271,6 @@ trait BlazyStylePluginTrait {
       return is_array($output) ? $output : ['#markup' => ($restricted ? Xss::filterAdmin($output) : $output)];
     }
     return [];
-  }
-
-  /**
-   * Returns the renderable array of field containing rendered and raw data.
-   */
-  public function getFieldRenderable($row, $index, $field_name = '', $multiple = FALSE) {
-    if (empty($field_name)) {
-      return FALSE;
-    }
-
-    // Be sure to not check "Use field template" under "Style settings" to have
-    // renderable array to work with, otherwise flattened string!
-    $result = isset($this->view->field[$field_name]) ? $this->view->field[$field_name]->getItems($row) : [];
-    return empty($result) ? [] : ($multiple ? $result : $result[0]);
   }
 
   /**

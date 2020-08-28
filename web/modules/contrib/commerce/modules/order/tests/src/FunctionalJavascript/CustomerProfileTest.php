@@ -56,6 +56,20 @@ class CustomerProfileTest extends OrderWebDriverTestBase {
   ];
 
   /**
+   * An incomplete HU address.
+   *
+   * @var array
+   */
+  protected $huAddress = [
+    'country_code' => 'HU',
+    'locality' => 'Vecsés',
+    'postal_code' => '',
+    'address_line1' => 'Árpád u. 6.',
+    'given_name' => 'Péter',
+    'family_name' => 'Tordai',
+  ];
+
+  /**
    * {@inheritdoc}
    */
   protected function setUp() {
@@ -75,15 +89,16 @@ class CustomerProfileTest extends OrderWebDriverTestBase {
    */
   public function testCountries() {
     // Confirm that the country list has been restricted to available countries.
-    // The store default "US" is not present because it is not available.
     $this->drupalGet('/commerce_order_test/customer_profile_test_form');
     $options = $this->xpath('//select[@name="profile[address][0][address][country_code]"]/option');
-    $this->assertCount(3, $options);
+    $this->assertCount(4, $options);
     $this->assertEquals('FR', $options[0]->getValue());
-    $this->assertEquals('RS', $options[1]->getValue());
-    $this->assertEquals('US', $options[2]->getValue());
+    $this->assertEquals('HU', $options[1]->getValue());
+    $this->assertEquals('RS', $options[2]->getValue());
+    $this->assertEquals('US', $options[3]->getValue());
+
     // Confirm that the store default is selected when available.
-    $this->assertNotEmpty($options[1]->getAttribute('selected'));
+    $this->assertNotEmpty($options[2]->getAttribute('selected'));
 
     // Confirm that it is possible to change the country and submit the form.
     $this->getSession()->getPage()->fillField('profile[address][0][address][country_code]', 'FR');
@@ -161,6 +176,27 @@ class CustomerProfileTest extends OrderWebDriverTestBase {
       'profile[address][0][address][address_line1]' => '10 Drupal Ave',
     ], 'Submit');
     $this->assertSession()->pageTextContains('The street is "10 Drupal Ave" and the country code is US. Address book: Yes');
+
+    // Confirm that selecting "Enter a new address" clears the form.
+    $this->drupalGet('/commerce_order_test/customer_profile_test_form');
+    $this->getSession()->getPage()->pressButton('billing_edit');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    foreach ($this->usAddress as $property => $value) {
+      $this->assertSession()->fieldValueEquals("profile[address][0][address][$property]", $value);
+    }
+    $this->getSession()->getPage()->fillField('profile[select_address]', '_new');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->saveHtmlOutput();
+    foreach ($this->emptyAddress as $property => $value) {
+      $this->assertSession()->fieldValueEquals("profile[address][0][address][$property]", $value);
+    }
+    $this->submitForm([
+      'profile[address][0][address][given_name]' => 'John',
+      'profile[address][0][address][family_name]' => 'Smith',
+      'profile[address][0][address][address_line1]' => 'Cetinjska 13',
+      'profile[address][0][address][locality]' => 'Belgrade',
+    ], 'Submit');
+    $this->assertSession()->pageTextContains('The street is "Cetinjska 13" and the country code is RS. Address book: Yes');
 
     // Confirm that it is possible to select the French profile.
     $this->drupalGet('/commerce_order_test/customer_profile_test_form');
@@ -412,12 +448,12 @@ class CustomerProfileTest extends OrderWebDriverTestBase {
 
     $this->drupalGet('/commerce_order_test/customer_profile_test_form/' . $profile->id());
     // Confirm that the _original option is present and selected, and that it
-    // has the expected suffix, as does the source address book profile.
+    // has the expected suffix.
     $options = $this->xpath('//select[@name="profile[select_address]"]/option');
     $this->assertCount(4, $options);
     $this->assertEquals($this->usAddress['address_line1'], $options[0]->getText());
-    $this->assertEquals($this->frenchAddress['address_line1'] . ' (updated version)', $options[1]->getText());
-    $this->assertEquals($this->frenchAddress['address_line1'] . ' (original version)', $options[2]->getText());
+    $this->assertEquals($this->frenchAddress['address_line1'], $options[1]->getText());
+    $this->assertEquals($this->frenchAddress['address_line1'] . ' (current version)', $options[2]->getText());
     $this->assertEquals('+ Enter a new address', $options[3]->getText());
     $this->assertNotEmpty($options[2]->getAttribute('selected'));
     $this->assertEquals('_original', $options[2]->getValue());
@@ -871,6 +907,61 @@ class CustomerProfileTest extends OrderWebDriverTestBase {
       'profile[address][0][address][locality]' => 'Belgrade',
     ], 'Submit');
     $this->assertSession()->pageTextContains('The street is "Cetinjska 13" and the country code is RS. Address book: Yes');
+  }
+
+  /**
+   * Tests switching between incomplete profiles.
+   */
+  public function testIncompleteProfiles() {
+    $us_profile = Profile::create([
+      'type' => 'customer',
+      'uid' => $this->adminUser->id(),
+      'address' => $this->usAddress,
+    ]);
+    $us_profile->save();
+
+    $empty_profile = Profile::create([
+      'type' => 'customer',
+      'uid' => $this->adminUser->id(),
+      'address' => $this->emptyAddress,
+    ]);
+    $empty_profile->save();
+
+    $hu_profile = Profile::create([
+      'type' => 'customer',
+      'uid' => $this->adminUser->id(),
+      'address' => $this->huAddress,
+    ]);
+    $hu_profile->save();
+
+    $this->drupalGet('/commerce_order_test/customer_profile_test_form/' . $us_profile->id() . '/TRUE');
+    $this->assertRenderedAddress($this->usAddress);
+
+    // Switch to empty address.
+    $this->getSession()->getPage()->fillField('profile[select_address]', $empty_profile->id());
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    foreach ($this->emptyAddress as $property => $value) {
+      $this->assertSession()->fieldValueEquals("profile[address][0][address][$property]", $value);
+    }
+
+    // Switch to Hungarian incomplete profile.
+    $this->getSession()->getPage()->fillField('profile[select_address]', $hu_profile->id());
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    foreach ($this->huAddress as $property => $value) {
+      $this->assertSession()->fieldValueEquals("profile[address][0][address][$property]", $value);
+    }
+
+    // Switch to creating new profile.
+    $this->getSession()->getPage()->fillField('profile[select_address]', '_new');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    foreach ($this->emptyAddress as $property => $value) {
+      $this->assertSession()->fieldValueEquals("profile[address][0][address][$property]", $value);
+    }
+
+    // Switch back to US address.
+    $this->getSession()->getPage()->fillField('profile[select_address]', $us_profile->id());
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertRenderedAddress($this->usAddress);
   }
 
 }

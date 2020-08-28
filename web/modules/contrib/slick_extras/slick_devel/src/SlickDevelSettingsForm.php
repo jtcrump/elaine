@@ -2,14 +2,41 @@
 
 namespace Drupal\slick_devel;
 
-use Drupal\Core\Url;
+use Drupal\Core\Asset\LibraryDiscoveryInterface;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Defines the Slick admin settings form.
  */
 class SlickDevelSettingsForm extends ConfigFormBase {
+
+  /**
+   * Drupal\Core\Asset\LibraryDiscoveryInterface definition.
+   *
+   * @var Drupal\Core\Asset\LibraryDiscoveryInterface
+   */
+  protected $libraryDiscovery;
+
+  /**
+   * Class constructor.
+   */
+  public function __construct(ConfigFactoryInterface $config_factory, LibraryDiscoveryInterface $library_discovery) {
+    parent::__construct($config_factory);
+    $this->libraryDiscovery = $library_discovery;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('config.factory'),
+      $container->get('library.discovery')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -48,8 +75,8 @@ class SlickDevelSettingsForm extends ConfigFormBase {
 
     $form['slick_devel']['debug'] = [
       '#type' => 'checkbox',
-      '#title' => t('Use non-minified slick.load.js'),
-      '#description' => t('Replace slick.load.min.js with slick.load.js. Only useful to debug it.'),
+      '#title' => $this->t('Use non-minified slick.load.js'),
+      '#description' => $this->t('Replace slick.load.min.js with slick.load.js. Only useful to debug it.'),
       '#default_value' => $config->get('debug'),
     ];
 
@@ -92,10 +119,9 @@ class SlickDevelSettingsForm extends ConfigFormBase {
       ->set('disable', $form_state->getValue('disable'))
       ->save();
 
-    // Invalidate the library discovery cache to update the responsive image.
-    \Drupal::service('library.discovery')->clearCachedDefinitions();
-
-    drupal_set_message($this->t('Be sure to <a href=":clear_cache">clear the cache</a> if trouble to see the updated settings', [':clear_cache' => Url::fromRoute('system.performance_settings')->toString()]));
+    // Invalidate the library discovery cache to update new assets.
+    $this->libraryDiscovery->clearCachedDefinitions();
+    $this->configFactory->clearStaticCache();
 
     parent::submitForm($form, $form_state);
   }

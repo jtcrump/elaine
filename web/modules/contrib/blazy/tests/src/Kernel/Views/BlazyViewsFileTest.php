@@ -19,10 +19,9 @@ class BlazyViewsFileTest extends BlazyViewsTestBase {
    * Set to TRUE to strict check all configuration saved.
    *
    * @var bool
-   * @todo remove once schema issue fixed for: view_mode, current_view_mode.
    * @see \Drupal\Core\Config\Development\ConfigSchemaChecker
    */
-  protected $strictConfigSchema = FALSE;
+  protected $strictConfigSchema = TRUE;
 
   /**
    * {@inheritdoc}

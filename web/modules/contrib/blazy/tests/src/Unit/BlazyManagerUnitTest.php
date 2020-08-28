@@ -5,6 +5,7 @@ namespace Drupal\Tests\blazy\Unit;
 use Drupal\Tests\UnitTestCase;
 use Drupal\Tests\blazy\Traits\BlazyUnitTestTrait;
 use Drupal\Tests\blazy\Traits\BlazyManagerUnitTestTrait;
+use Drupal\blazy\BlazyDefault;
 
 /**
  * @coversDefaultClass \Drupal\blazy\BlazyManager
@@ -25,8 +26,6 @@ class BlazyManagerUnitTest extends UnitTestCase {
     $this->setUpUnitServices();
     $this->setUpUnitContainer();
     $this->setUpUnitImages();
-
-    $this->blazyManager->setLightboxes('blazy_test');
   }
 
   /**
@@ -91,9 +90,6 @@ class BlazyManagerUnitTest extends UnitTestCase {
 
     $this->blazyManager->cleanUpBreakpoints($settings);
     $this->assertEquals($expected_breakpoints, $settings['breakpoints']);
-
-    // Verify that Blazy is activated by breakpoints.
-    $this->assertEquals($expected_blazy, $settings['blazy']);
   }
 
   /**
@@ -140,6 +136,7 @@ class BlazyManagerUnitTest extends UnitTestCase {
 
     $build['item'] = $item ? $this->testItem : [];
     $build['content'] = $content;
+    $build['settings'] = BlazyDefault::itemSettings();
     $build['settings']['uri'] = $uri;
 
     if ($item) {
@@ -171,8 +168,8 @@ class BlazyManagerUnitTest extends UnitTestCase {
       FALSE,
       '',
       '',
-      FALSE,
-      FALSE,
+      TRUE,
+      TRUE,
     ];
     $data[] = [
       TRUE,
@@ -228,7 +225,6 @@ class BlazyManagerUnitTest extends UnitTestCase {
    * Tests cases for lightboxes.
    *
    * @covers ::getLightboxes
-   * @covers ::setLightboxes
    */
   public function testGetLightboxes() {
     $lightboxes = $this->blazyManager->getLightboxes();

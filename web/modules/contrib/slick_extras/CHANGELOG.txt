@@ -1,4 +1,15 @@
 
+Slick extras 8.x-1.0-dev, 2020-01-11
+------------------------------------
+- Issue #2827816 by Paul Broon, gausarts, sandramandy, mortona2k, mhentry,
+  scaexp, barrypoore, ivnish, lucasvm, ExTexan, gkiritsop: Slick Example
+  can'\''t be installed due to unmet dependencies.
+- Added support for the skins as plugins, see #3105670.
+
+Slick extras 8.x-1.0-dev, 2019-03-30
+------------------------------------
+- Renamed README.txt for README.md.
+
 Slick extras 8.x-1.0-dev, 2018-12-19
 ------------------------------------
 - Issue #2868846 by Pavan B S, dhruveshdtripathi: Convert module to use short

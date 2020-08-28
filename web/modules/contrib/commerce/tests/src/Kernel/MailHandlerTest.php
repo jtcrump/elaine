@@ -50,9 +50,10 @@ class MailHandlerTest extends CommerceKernelTestBase {
     $this->assertEquals('customer@example.com', $email['to']);
     $this->assertFalse(isset($email['headers']['Cc']));
     $this->assertFalse(isset($email['headers']['Bcc']));
+    $this->assertFalse(isset($email['headers']['Reply-to']));
     $this->assertEquals($this->store->getEmail(), $email['from']);
     $this->assertEquals('Test subject', $email['subject']);
-    $this->assertContains('Mail Handler Test', $email['body']);
+    $this->assertStringContainsString('Mail Handler Test', $email['body']);
     $this->assertEquals($language_manager->getCurrentLanguage()->getId(), $email['langcode']);
 
     // No email should be sent if the recipient is empty.
@@ -70,6 +71,7 @@ class MailHandlerTest extends CommerceKernelTestBase {
     $params = [
       'id' => 'custom',
       'from' => 'me@example.com',
+      'reply-to' => 'actually.me@example.com',
       'cc' => 'billing@example.com',
       'bcc' => 'other@example.com',
       'langcode' => 'fr',
@@ -85,9 +87,10 @@ class MailHandlerTest extends CommerceKernelTestBase {
     $this->assertEquals('you@example.com', $email['to']);
     $this->assertEquals('billing@example.com', $email['headers']['Cc']);
     $this->assertEquals('other@example.com', $email['headers']['Bcc']);
+    $this->assertEquals('actually.me@example.com', $email['headers']['Reply-to']);
     $this->assertEquals('me@example.com', $email['from']);
     $this->assertEquals('Hello', $email['subject']);
-    $this->assertContains('Custom Mail Handler Test', $email['body']);
+    $this->assertStringContainsString('Custom Mail Handler Test', $email['body']);
     $this->assertEquals('fr', $email['langcode']);
     $this->assertEquals('bar', $email['params']['foo']);
   }

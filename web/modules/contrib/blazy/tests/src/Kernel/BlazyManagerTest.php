@@ -46,11 +46,13 @@ class BlazyManagerTest extends BlazyKernelTestBase {
    * @dataProvider providerTestPreRenderImage
    */
   public function testPreRenderImage(array $settings = [], $expected_responsive_image_style_id = '') {
-    $build             = $this->data;
+    $build = $this->data;
     $settings['count'] = $this->maxItems;
-    $settings['uri']   = $this->uri;
-    $build['settings'] = array_merge($build['settings'], $settings);
-    $switch_css        = str_replace('_', '-', $settings['media_switch']);
+    $settings['uri'] = $this->uri;
+    $settings['responsive_image_style_id'] = '';
+    $settings['resimage'] = empty($settings['responsive_image_style']) ? FALSE : $this->blazyManager->entityLoad($settings['responsive_image_style'], 'responsive_image_style');
+    $build['settings'] = array_merge($build['settings'], $settings) + BlazyDefault::itemSettings();
+    $switch_css = str_replace('_', '-', $settings['media_switch']);
 
     $element = $this->doPreRenderImage($build);
 
@@ -363,7 +365,6 @@ class BlazyManagerTest extends BlazyKernelTestBase {
    * @covers ::attach
    * @covers ::buildDataBlazy
    * @covers ::getLightboxes
-   * @covers ::setLightboxes
    * @covers ::buildSkins
    * @covers ::getCache
    *
@@ -393,11 +394,8 @@ class BlazyManagerTest extends BlazyKernelTestBase {
     $this->assertNotEmpty($settings['blazy']);
 
     // Tests Blazy lightboxes.
-    $this->blazyManager->setLightboxes('blazy_test');
     $lightboxes = $this->blazyManager->getLightboxes();
-
     $this->assertFalse(in_array('nixbox', $lightboxes));
-    $this->assertTrue(in_array('blazy_test', $lightboxes));
 
     // Tests for skins.
     // Tests skins with a single expected method BlazySkinTest::skins().
